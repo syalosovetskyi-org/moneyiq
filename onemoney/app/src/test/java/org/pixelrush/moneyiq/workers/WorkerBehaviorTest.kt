@@ -99,12 +99,25 @@ class WorkerBehaviorTest {
     }
 
     @Test fun notification_worker_completes_and_posts_zerno_title() = runTest {
+        val nm = app.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        org.robolectric.Shadows.shadowOf(nm).setNotificationsEnabled(true)
         assertEquals(ListenableWorker.Result.success(),
             TestListenableWorkerBuilder<NotificationWorker>(app).build().doWork())
         val manager = app.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         val notifications = org.robolectric.Shadows.shadowOf(manager).allNotifications
-        if (notifications.isNotEmpty()) {
-            assertEquals("Zerno", notifications.first().extras.getString(android.app.Notification.EXTRA_TITLE))
-        }
+        assertEquals(1, notifications.size)
+        assertEquals("Zerno", notifications.first().extras.getString(android.app.Notification.EXTRA_TITLE))
     }
+    @Test fun notifications_disabled_posts_nothing_but_schedules_next_reminder() = runTest {
+        val manager = app.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        org.robolectric.Shadows.shadowOf(manager).setNotificationsEnabled(false)
+        assertEquals(ListenableWorker.Result.success(),
+            TestListenableWorkerBuilder<NotificationWorker>(app).build().doWork())
+        assertTrue(org.robolectric.Shadows.shadowOf(manager).allNotifications.isEmpty())
+        val scheduled = androidx.work.WorkManager.getInstance(app)
+            .getWorkInfosForUniqueWork(NotificationWorker.WORK_NAME).get()
+        assertEquals(1, scheduled.size)
+        assertEquals(androidx.work.WorkInfo.State.ENQUEUED, scheduled.single().state)
+    }
+
 }
