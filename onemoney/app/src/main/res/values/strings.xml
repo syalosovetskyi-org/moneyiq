@@ -3,7 +3,7 @@
      (values-ru, values-en) must mirror this exact key set. Missing keys fall
      back here, so keep this file complete and single-language. -->
 <resources>
-    <string name="app_name">onemoney</string>
+    <string name="app_name">Zerno</string>
 
     <!-- Navigation -->
     <string name="nav_home">Головна</string>
@@ -427,4 +427,6 @@
     <string name="tx_convert_move_title">Операція стане переказом</string>
     <string name="tx_convert_move_message">Гроші не витрачені, а переміщені на «%1$s». Операція перестане бути витратою, категорію буде знято, баланси обох рахунків перераховано.</string>
     <string name="tx_convert_move_confirm">Перемістити</string>
+    <string name="budget_delete_confirm_title">Видалити бюджет?</string>
+    <string name="budget_delete_confirm_message">Усі заплановані суми буде очищено. Операції залишаться.</string>
 </resources>

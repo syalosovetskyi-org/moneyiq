@@ -422,4 +422,6 @@
     <string name="tx_convert_move_title">Операция станет переводом</string>
     <string name="tx_convert_move_message">Деньги не потрачены, а перемещены на «%1$s». Операция перестанет быть расходом, категория будет снята, балансы обоих счетов пересчитаны.</string>
     <string name="tx_convert_move_confirm">Переместить</string>
+    <string name="budget_delete_confirm_title">Удалить бюджет?</string>
+    <string name="budget_delete_confirm_message">Все запланированные суммы будут очищены. Операции останутся.</string>
 </resources>

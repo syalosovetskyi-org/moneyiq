@@ -358,7 +358,7 @@ fun MainScreen(
 // ── App drawer ────────────────────────────────────────────────────────────────
 
 @Composable
-private fun AppDrawerContent(
+internal fun AppDrawerContent(
     onClose:         () -> Unit,
     onDataClick:     () -> Unit = {},
     onSettingsClick: () -> Unit = {}
@@ -371,22 +371,16 @@ private fun AppDrawerContent(
                 .padding(start = 16.dp, end = 8.dp, top = 20.dp, bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // App icon
-            Box(
-                modifier         = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(listOf(Color(0xFF4361EE), Color(0xFF7B2FBE)))
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("1", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp)
-            }
+            Icon(
+                painter = androidx.compose.ui.res.painterResource(R.drawable.ic_launcher_full),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(52.dp).clip(CircleShape)
+            )
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "1Money",
+                    "Zerno",
                     style      = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -398,14 +392,11 @@ private fun AppDrawerContent(
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        stringResource(R.string.drawer_sync_off),
+                        "Особистий бюджет",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                 }
-            }
-            IconButton(onClick = {}) {
-                Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
             }
             IconButton(onClick = onClose) {
                 Icon(
@@ -420,12 +411,8 @@ private fun AppDrawerContent(
         Spacer(Modifier.height(12.dp))
 
         // Menu items
-        DrawerMenuItem(Icons.Outlined.Person,     stringResource(R.string.drawer_signin))
         DrawerMenuItem(Icons.Outlined.Settings,   stringResource(R.string.settings_title), onClick = onSettingsClick)
         DrawerMenuItem(Icons.Outlined.Storage,    stringResource(R.string.settings_data),  onClick = onDataClick)
-        DrawerMenuItem(Icons.Outlined.StarBorder, stringResource(R.string.drawer_rate))
-        DrawerMenuItem(Icons.Outlined.Headset,    stringResource(R.string.drawer_support))
-        DrawerMenuItem(Icons.Outlined.Info,       stringResource(R.string.settings_about))
     }
 }
 
@@ -433,7 +420,7 @@ private fun AppDrawerContent(
 private fun DrawerMenuItem(
     icon: ImageVector,
     label: String,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit
 ) {
     ListItem(
         modifier          = Modifier.clickable(onClick = onClick),
@@ -529,7 +516,7 @@ fun SharedTopBar(
 
 // ── Reusable UI blocks ────────────────────────────────────────────────────────
 
-private val RepayPurple = Color(0xFF9C27B0)
+
 
 @Composable
 fun TransactionListItem(tx: TransactionWithDetails, onClick: () -> Unit) {
@@ -541,7 +528,7 @@ fun TransactionListItem(tx: TransactionWithDetails, onClick: () -> Unit) {
         TransactionType.TRANSFER -> Triple(appColors.transferBlue, "⇄", Icons.Default.SwapHoriz)
         TransactionType.BORROW   -> Triple(appColors.debtOrange,   "+", Icons.Default.MoveToInbox)
         TransactionType.LEND     -> Triple(appColors.debtOrange,   "−", Icons.Default.Outbox)
-        TransactionType.REPAY    -> Triple(RepayPurple,            "−", Icons.AutoMirrored.Filled.AssignmentReturn)
+        TransactionType.REPAY    -> Triple(appColors.debtOrange,            "−", Icons.AutoMirrored.Filled.AssignmentReturn)
     }
     val fallbackColor = MaterialTheme.colorScheme.secondaryContainer
     val catColor = tx.categoryColor?.let {

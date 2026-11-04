@@ -416,4 +416,6 @@
     <string name="tx_convert_move_title">The operation will become a transfer</string>
     <string name="tx_convert_move_message">The money was moved to “%1$s”, not spent. The operation will stop being an expense, its category will be cleared and both account balances recalculated.</string>
     <string name="tx_convert_move_confirm">Move</string>
+    <string name="budget_delete_confirm_title">Delete budget?</string>
+    <string name="budget_delete_confirm_message">All planned amounts will be cleared. Transactions will remain.</string>
 </resources>
