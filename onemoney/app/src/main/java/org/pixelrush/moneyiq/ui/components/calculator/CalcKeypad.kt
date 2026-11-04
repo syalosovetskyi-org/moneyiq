@@ -74,7 +74,7 @@ fun SharedCalcKeypad(
     LaunchedEffect(Unit) {
         try { focusRequester.requestFocus() } catch (failure: Exception) {
             if (failure is kotlinx.coroutines.CancellationException) throw failure
-            android.util.Log.w("CalcKeypad", "Operation failed", failure)
+            org.syalosovetskyi.onemoney.CrashReporter.warning("CalcKeypad", "Operation failed", failure)
 }
     }
 

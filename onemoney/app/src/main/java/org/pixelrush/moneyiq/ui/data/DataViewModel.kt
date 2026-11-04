@@ -78,13 +78,13 @@ class DataViewModel @Inject constructor(
             val driveName    = if (driveUri.isNotBlank()) {
                 runCatching {
                     DriveBackupWorker.getFolderDisplayName(context, Uri.parse(driveUri))
-                }.onFailure { android.util.Log.w("DataViewModel", "Folder name unavailable", it) }.getOrNull() ?: driveUri.substringAfterLast("/")
+                }.onFailure { org.syalosovetskyi.onemoney.CrashReporter.warning("DataViewModel", "Folder name unavailable", it) }.getOrNull() ?: driveUri.substringAfterLast("/")
             } else ""
             val driveBackups = if (driveUri.isNotBlank()) {
                 withContext(Dispatchers.IO) {
                     runCatching {
                         DriveBackupWorker.listBackupFiles(context, Uri.parse(driveUri))
-                    }.onFailure { android.util.Log.w("DataViewModel", "Backup list unavailable", it) }.getOrDefault(emptyList())
+                    }.onFailure { org.syalosovetskyi.onemoney.CrashReporter.warning("DataViewModel", "Backup list unavailable", it) }.getOrDefault(emptyList())
                 }
             } else emptyList()
 
@@ -124,7 +124,7 @@ class DataViewModel @Inject constructor(
                 showMessage(context.getString(R.string.data_export_saved))
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                android.util.Log.w("DataViewModel", "Data operation failed", e)
+                org.syalosovetskyi.onemoney.CrashReporter.warning("DataViewModel", "Data operation failed", e)
 
                 showMessage(context.getString(R.string.data_write_error, e.message ?: ""))
             }
@@ -147,7 +147,7 @@ class DataViewModel @Inject constructor(
                 loadState(context)
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                android.util.Log.w("DataViewModel", "Data operation failed", e)
+                org.syalosovetskyi.onemoney.CrashReporter.warning("DataViewModel", "Data operation failed", e)
 
                 showMessage(context.getString(R.string.data_import_error, e.message ?: ""))
             } finally {
@@ -166,7 +166,7 @@ class DataViewModel @Inject constructor(
             CsvExporter.export(context, all)
         } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                android.util.Log.w("DataViewModel", "Data operation failed", e)
+                org.syalosovetskyi.onemoney.CrashReporter.warning("DataViewModel", "Data operation failed", e)
                 null
             }
     }
@@ -250,7 +250,7 @@ class DataViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                android.util.Log.w("DataViewModel", "Data operation failed", e)
+                org.syalosovetskyi.onemoney.CrashReporter.warning("DataViewModel", "Data operation failed", e)
 
                 showMessage(context.getString(R.string.data_error, e.message ?: ""))
             } finally {
@@ -272,7 +272,7 @@ class DataViewModel @Inject constructor(
                 loadState(context)
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                android.util.Log.w("DataViewModel", "Data operation failed", e)
+                org.syalosovetskyi.onemoney.CrashReporter.warning("DataViewModel", "Data operation failed", e)
 
                 showMessage(context.getString(R.string.data_restore_error, e.message ?: ""))
             } finally {
@@ -372,7 +372,7 @@ class DataViewModel @Inject constructor(
                 loadState(context)
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                android.util.Log.w("DataViewModel", "Data operation failed", e)
+                org.syalosovetskyi.onemoney.CrashReporter.warning("DataViewModel", "Data operation failed", e)
 
                 showMessage(context.getString(R.string.data_monoflow_error, e.message ?: ""))
             } finally {
@@ -412,7 +412,7 @@ class DataViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                android.util.Log.w("DataViewModel", "Data operation failed", e)
+                org.syalosovetskyi.onemoney.CrashReporter.warning("DataViewModel", "Data operation failed", e)
 
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, context.getString(R.string.data_error, e.message ?: ""), Toast.LENGTH_LONG).show()

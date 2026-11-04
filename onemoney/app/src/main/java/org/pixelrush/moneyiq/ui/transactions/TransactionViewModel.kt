@@ -144,7 +144,7 @@ class TransactionViewModel @Inject constructor(
                 _state.update { it.copy(isSaving = false, saved = true) }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                android.util.Log.w("TransactionViewModel", "Transaction write failed", e)
+                org.syalosovetskyi.onemoney.CrashReporter.warning("TransactionViewModel", "Transaction write failed", e)
                 _state.update { it.copy(isSaving = false, error = e.message ?: "Помилка збереження") }
             }
         }
@@ -159,7 +159,7 @@ class TransactionViewModel @Inject constructor(
                 _state.update { it.copy(isSaving = false, saved = true) }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                android.util.Log.w("TransactionViewModel", "Transaction write failed", e)
+                org.syalosovetskyi.onemoney.CrashReporter.warning("TransactionViewModel", "Transaction write failed", e)
                 _state.update { it.copy(isSaving = false, error = e.message ?: "Помилка видалення") }
             }
         }

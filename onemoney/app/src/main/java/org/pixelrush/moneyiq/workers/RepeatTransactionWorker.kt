@@ -72,7 +72,7 @@ class RepeatTransactionWorker(
             Result.success()
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
-            Log.w("RepeatTransactionWorker", "Failed to process recurring transactions", e)
+            org.syalosovetskyi.onemoney.CrashReporter.warning("RepeatTransactionWorker", "Failed to process recurring transactions", e)
             Result.retry()
         }
     }

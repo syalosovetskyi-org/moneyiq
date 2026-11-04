@@ -29,10 +29,11 @@ private val Context.ratesDataStore by preferencesDataStore(name = "currency_rate
  * трактує їх як внесок 0 у загальний підсумок.
  */
 @Singleton
-class CurrencyRatesRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+class CurrencyRatesRepository internal constructor(
+    private val ds: androidx.datastore.core.DataStore<Preferences>,
+    private val fetch: (() -> String)? = null
 ) {
-    private val ds = context.ratesDataStore
+    @Inject constructor(@ApplicationContext context: Context) : this(context.ratesDataStore)
 
     companion object {
         private const val BASE = "UAH"
@@ -50,7 +51,7 @@ class CurrencyRatesRepository @Inject constructor(
                 runCatching {
                     val o = JSONObject(json)
                     o.keys().forEach { k -> put(k, o.getDouble(k)) }
-                }.onFailure { android.util.Log.w("CurrencyRatesRepository", "Invalid cached rates", it) }
+                }.onFailure { org.syalosovetskyi.onemoney.CrashReporter.warning("CurrencyRatesRepository", "Invalid cached rates", it) }
             }
         }
     }
@@ -60,7 +61,7 @@ class CurrencyRatesRepository @Inject constructor(
 
     /** Тягне свіжі курси з НБУ й кешує їх. Кидає виняток при мережевій помилці. */
     suspend fun refresh() = withContext(Dispatchers.IO) {
-        val parsed = parseRates(fetchRatesJson())
+        val parsed = parseRates(fetch?.invoke() ?: fetchRatesJson())
         ds.edit { p ->
             p[KEY_RATES_JSON]    = parsed
             p[KEY_RATES_UPDATED] = System.currentTimeMillis()
@@ -73,7 +74,7 @@ class CurrencyRatesRepository @Inject constructor(
         if (System.currentTimeMillis() - updated > maxAgeMs) {
             runCatching { refresh() }.onFailure {
                 if (it is kotlinx.coroutines.CancellationException) throw it
-                android.util.Log.w("CurrencyRatesRepository", "Rate refresh failed; retaining cache", it)
+                org.syalosovetskyi.onemoney.CrashReporter.warning("CurrencyRatesRepository", "Rate refresh failed; retaining cache", it)
             }
         }
     }

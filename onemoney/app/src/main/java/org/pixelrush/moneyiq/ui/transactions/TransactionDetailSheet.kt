@@ -86,7 +86,7 @@ internal fun TransactionDetailSheet(
         hex?.let {
             try { Color(it.toColorInt()) } catch (failure: Exception) {
                 if (failure is kotlinx.coroutines.CancellationException) throw failure
-                android.util.Log.w("TransactionDetailSheet", "Operation failed", failure)
+                org.syalosovetskyi.onemoney.CrashReporter.warning("TransactionDetailSheet", "Operation failed", failure)
                 null
             }
         }

@@ -62,7 +62,7 @@
                 android:resource="@xml/widget_balance_info" />
         </receiver>
 
-        <meta-data android:name="io.sentry.auto-init" android:value="false" />
+
 
     </application>
 

@@ -81,7 +81,7 @@ class DriveBackupWorker(
             Result.success()
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
-            android.util.Log.w("DriveBackupWorker", "Operation failed", e)
+            org.syalosovetskyi.onemoney.CrashReporter.warning("DriveBackupWorker", "Operation failed", e)
 
             Result.failure()
         }
@@ -139,7 +139,7 @@ class DriveBackupWorker(
                 )
             } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
-            android.util.Log.w("DriveBackupWorker", "Operation failed", e)
+            org.syalosovetskyi.onemoney.CrashReporter.warning("DriveBackupWorker", "Operation failed", e)
             null
         }
         }
@@ -181,7 +181,7 @@ class DriveBackupWorker(
                 }
                 result.sortedByDescending { it.modifiedMs }
             } catch (e: Exception) {
-            android.util.Log.w("DriveBackupWorker", "Operation failed", e)
+            org.syalosovetskyi.onemoney.CrashReporter.warning("DriveBackupWorker", "Operation failed", e)
 
                 result
             }
@@ -194,7 +194,7 @@ class DriveBackupWorker(
                     it.bufferedReader(Charsets.UTF_8).readText()
                 }
             } catch (e: Exception) {
-            android.util.Log.w("DriveBackupWorker", "Operation failed", e)
+            org.syalosovetskyi.onemoney.CrashReporter.warning("DriveBackupWorker", "Operation failed", e)
             null
         }
         }
@@ -211,13 +211,13 @@ class DriveBackupWorker(
                 DocumentsContract.renameDocument(context.contentResolver, staging, fileName)
                     ?: throw java.io.IOException("DocumentsProvider does not support backup rename")
             } catch (failure: Exception) {
-                android.util.Log.w("DriveBackupWorker", "Backup publication failed", failure)
+                org.syalosovetskyi.onemoney.CrashReporter.warning("DriveBackupWorker", "Backup publication failed", failure)
                 try {
                     if (!DocumentsContract.deleteDocument(context.contentResolver, staging)) {
                         android.util.Log.w("DriveBackupWorker", "Could not remove staging document")
                     }
                 } catch (cleanup: Exception) {
-                    android.util.Log.w("DriveBackupWorker", "Staging cleanup failed", cleanup)
+                    org.syalosovetskyi.onemoney.CrashReporter.warning("DriveBackupWorker", "Staging cleanup failed", cleanup)
                 }
                 throw failure
             }
@@ -229,7 +229,7 @@ class DriveBackupWorker(
                 DocumentsContract.deleteDocument(context.contentResolver, docUri)
             } catch (failure: Exception) {
                 if (failure is kotlinx.coroutines.CancellationException) throw failure
-                android.util.Log.w("DriveBackupWorker", "Operation failed", failure)
+                org.syalosovetskyi.onemoney.CrashReporter.warning("DriveBackupWorker", "Operation failed", failure)
 }
         }
 
@@ -254,7 +254,7 @@ class DriveBackupWorker(
                 }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                android.util.Log.w("DriveBackupWorker", "Operation failed", e)
+                org.syalosovetskyi.onemoney.CrashReporter.warning("DriveBackupWorker", "Operation failed", e)
                 null
             }
         }

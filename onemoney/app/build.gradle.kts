@@ -7,7 +7,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.sentry)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 val localProps = Properties().also { props ->
@@ -95,17 +96,27 @@ android {
     val glitchtipDsn = (System.getenv("GLITCHTIP_DSN")
         ?: localProps.getProperty("glitchtip.dsn", "")).trim()
 
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("personal") {
+            dimension = "distribution"
+            buildConfigField("String", "GLITCHTIP_DSN", "\"${glitchtipDsn.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
+        }
+        create("play") {
+            dimension = "distribution"
+            applicationId = "org.syalosovetskyi.onemoney"
+        }
+    }
+
     buildTypes {
         debug {
             enableUnitTestCoverage = true
             buildConfigField("String", "DEBUG_MONOFLOW_URL",   "\"$debugMonoflowUrl\"")
             buildConfigField("String", "DEBUG_MONOFLOW_TOKEN", "\"$debugMonoflowToken\"")
-            buildConfigField("String", "GLITCHTIP_DSN",        "\"$glitchtipDsn\"")
         }
         release {
             buildConfigField("String", "DEBUG_MONOFLOW_URL",   "\"\"")
             buildConfigField("String", "DEBUG_MONOFLOW_TOKEN", "\"\"")
-            buildConfigField("String", "GLITCHTIP_DSN",        "\"$glitchtipDsn\"")
         }
     }
 
@@ -175,7 +186,9 @@ dependencies {
     implementation(libs.biometric)
 
     // Sentry
-    implementation(libs.sentry.android)
+    "personalImplementation"(libs.sentry.android)
+    "playImplementation"(platform(libs.firebase.bom))
+    "playImplementation"(libs.firebase.crashlytics)
 
     // Testing — unit
     testImplementation(libs.compose.ui.test.junit4)
@@ -201,25 +214,11 @@ dependencies {
     androidTestImplementation(libs.hilt.android.testing)
 }
 
-// Плагин Sentry на сборке НИЧЕГО НАРУЖУ НЕ ОТДАЁТ. Раньше он заливал в публичный
-// sentry.io (org serg-yalosovetsky, проект one_money) mapping-файл и, при заданном
-// токене, includeSourceContext — то есть ИСХОДНИКИ приложения. Приёмник падений
-// переехал на свой glitchtip.ibotz.fun (ADR-075), и загрузка символов туда не
-// настроена, поэтому она просто выключена: цена — обфусцированные стектрейсы
-// релизной сборки. Включать обратно только на СВОЙ приёмник (serg/tasks#679).
-sentry {
-    includeSourceContext = false
-    autoUploadProguardMapping = false
-    uploadNativeSymbols = false
-    telemetry = false
-
-    // Sentry 4.14.1 ASM bytecode transform (transformDebugClassesWithAsm) drops some
-    // worker classes (DriveBackupWorker/MonoFlowSyncWorker/NotificationWorker) from the
-    // dex on a clean build → NoClassDefFoundError: DriveBackupEntryPoint on cold start.
-    // We don't use auto perf-tracing, so disable the transform. Error reporting via the
-    // Sentry SDK (SentryAndroid.init in MoneyIQApp) is unaffected.
-    tracingInstrumentation {
-        enabled.set(false)
+// Personal builds deliberately have no Firebase configuration.
+tasks.configureEach {
+    if ((name.startsWith("processPersonal") && name.endsWith("GoogleServices")) ||
+        (name.contains("Personal") && name.contains("Crashlytics"))) {
+        enabled = false
     }
 }
 

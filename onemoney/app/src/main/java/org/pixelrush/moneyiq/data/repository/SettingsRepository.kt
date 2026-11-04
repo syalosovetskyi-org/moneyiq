@@ -56,10 +56,10 @@ data class AppSettings(
 )
 
 @Singleton
-class SettingsRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+class SettingsRepository internal constructor(
+    private val ds: androidx.datastore.core.DataStore<Preferences>
 ) {
-    private val ds = context.settingsDataStore
+    @Inject constructor(@ApplicationContext context: Context) : this(context.settingsDataStore)
 
     companion object {
         val KEY_THEME_MODE         = stringPreferencesKey("theme_mode")
@@ -90,9 +90,9 @@ class SettingsRepository @Inject constructor(
 
     val settings: Flow<AppSettings> = ds.data.map { p ->
         AppSettings(
-            themeMode              = runCatching { ThemeMode.valueOf(p[KEY_THEME_MODE] ?: ThemeMode.SYSTEM.name) }.onFailure { android.util.Log.w("SettingsRepository", "Invalid stored theme", it) }.getOrDefault(ThemeMode.SYSTEM),
+            themeMode              = runCatching { ThemeMode.valueOf(p[KEY_THEME_MODE] ?: ThemeMode.SYSTEM.name) }.onFailure { org.syalosovetskyi.onemoney.CrashReporter.warning("SettingsRepository", "Invalid stored theme", it) }.getOrDefault(ThemeMode.SYSTEM),
             accentColorArgb        = p[KEY_ACCENT_COLOR] ?: 0xFFB07A1A.toInt(),
-            homeScreen             = runCatching { HomeScreenTab.valueOf(p[KEY_HOME_SCREEN] ?: HomeScreenTab.CATEGORIES.name) }.onFailure { android.util.Log.w("SettingsRepository", "Invalid stored home screen", it) }.getOrDefault(HomeScreenTab.CATEGORIES),
+            homeScreen             = runCatching { HomeScreenTab.valueOf(p[KEY_HOME_SCREEN] ?: HomeScreenTab.CATEGORIES.name) }.onFailure { org.syalosovetskyi.onemoney.CrashReporter.warning("SettingsRepository", "Invalid stored home screen", it) }.getOrDefault(HomeScreenTab.CATEGORIES),
             budgetVisible          = p[KEY_BUDGET_VISIBLE] ?: true,
             loginProtectionEnabled = p[KEY_LOGIN_PROTECTION] ?: false,
             notificationsEnabled   = p[KEY_NOTIFICATIONS] ?: true,

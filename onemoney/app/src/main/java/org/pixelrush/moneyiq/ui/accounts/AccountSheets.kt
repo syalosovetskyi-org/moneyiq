@@ -59,7 +59,7 @@ fun currencyDisplayName(code: String): String {
         if (icu.equals(code, ignoreCase = true)) fallback
         else icu.replaceFirstChar { it.uppercase() }
     } catch (failure: IllegalArgumentException) {
-        android.util.Log.w("AccountSheets", "Operation failed", failure)
+        org.syalosovetskyi.onemoney.CrashReporter.warning("AccountSheets", "Operation failed", failure)
 
         fallback
     }

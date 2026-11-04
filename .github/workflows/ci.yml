@@ -38,11 +38,11 @@ jobs:
             "build-tools;35.0.0" 2>&1 | tail -5
 
       - name: Run unit tests
-        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+        run: gradle :app:testPersonalDebugUnitTest :app:testPlayDebugUnitTest --no-daemon --stacktrace
         working-directory: onemoney
 
       - name: Generate coverage report
-        run: gradle :app:createDebugUnitTestCoverageReport --no-daemon
+        run: gradle :app:createPersonalDebugUnitTestCoverageReport :app:createPlayDebugUnitTestCoverageReport --no-daemon
         working-directory: onemoney
 
       - name: Upload test report
@@ -50,7 +50,7 @@ jobs:
         if: always()
         with:
           name: unit-test-report
-          path: onemoney/app/build/reports/tests/testDebugUnitTest/
+          path: onemoney/app/build/reports/tests/
           retention-days: 14
 
       - name: Upload coverage report
@@ -58,7 +58,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
           name: coverage-report
-          path: onemoney/app/build/reports/coverage/test/debug/
+          path: onemoney/app/build/reports/coverage/
           retention-days: 30
 
   # ── Build APK ─────────────────────────────────────────────────────────────────
@@ -90,12 +90,12 @@ jobs:
             "build-tools;35.0.0" 2>&1 | tail -5
 
       - name: Build debug APK
-        run: gradle :app:assembleDebug --no-daemon
+        run: gradle :app:assemblePersonalDebug :app:assemblePlayDebug --no-daemon
         working-directory: onemoney
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-${{ github.sha }}
-          path: onemoney/app/build/outputs/apk/debug/app-debug.apk
+          path: onemoney/app/build/outputs/apk/*/debug/*.apk
           retention-days: 30

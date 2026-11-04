@@ -94,10 +94,10 @@ class MonoFlowSyncWorker(
             if (e is java.net.SocketTimeoutException ||
                 e is java.net.ConnectException ||
                 e is java.io.IOException) {
-                Log.w(TAG, "синк не вдався (мережа), спробуємо ще раз: ${e.message}")
+                org.syalosovetskyi.onemoney.CrashReporter.warning(TAG, "синк не вдався (мережа), спробуємо ще раз: ${e.message}", e)
                 Result.retry()
             } else {
-                Log.e(TAG, "синк провалено: ${e.javaClass.simpleName}: ${e.message}", e)
+                org.syalosovetskyi.onemoney.CrashReporter.error(TAG, "синк провалено: ${e.javaClass.simpleName}: ${e.message}", e)
                 Result.failure()
             }
         }

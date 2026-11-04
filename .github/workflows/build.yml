@@ -32,7 +32,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run unit tests
-        run: ./gradlew :app:testDebugUnitTest --no-daemon
+        run: ./gradlew :app:testPersonalDebugUnitTest :app:testPlayDebugUnitTest --no-daemon
 
       - name: Upload test results
         if: always()
@@ -92,15 +92,15 @@ jobs:
             echo "Missing GLITCHTIP_DSN secret: released APK would not report crashes." >&2
             exit 1
           fi
-          ./gradlew :app:assembleRelease --no-daemon
+          ./gradlew :app:assemblePersonalRelease --no-daemon
 
       - name: Verify APK signature
-        run: $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
+        run: $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs app/build/outputs/apk/personal/release/app-personal-release.apk
 
       - name: Rename APK
         run: |
-          mv app/build/outputs/apk/release/app-release.apk \
-             app/build/outputs/apk/release/onemoney-${{ github.ref_name }}-signed.apk
+          mv app/build/outputs/apk/personal/release/app-personal-release.apk \
+             app/build/outputs/apk/personal/release/onemoney-${{ github.ref_name }}-signed.apk
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -109,7 +109,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           make_latest: true
           generate_release_notes: true
-          files: onemoney/app/build/outputs/apk/release/onemoney-${{ github.ref_name }}-signed.apk
+          files: onemoney/app/build/outputs/apk/personal/release/onemoney-${{ github.ref_name }}-signed.apk
           body: |
             ## onemoney ${{ github.ref_name }}
 

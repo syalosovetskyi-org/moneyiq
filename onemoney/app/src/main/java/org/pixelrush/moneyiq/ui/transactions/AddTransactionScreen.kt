@@ -105,7 +105,7 @@ fun AddTransactionScreen(
     val fromCatColor = remember(fromCategory?.colorHex) {
         fromCategory?.colorHex?.let {
             try { Color(it.toColorInt()) } catch (failure: Exception) {
-            android.util.Log.w("AddTransactionScreen", "Operation failed", failure)
+            org.syalosovetskyi.onemoney.CrashReporter.warning("AddTransactionScreen", "Operation failed", failure)
             null
         }
         }

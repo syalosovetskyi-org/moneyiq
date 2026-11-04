@@ -115,12 +115,12 @@ class TxOverrideRepository @Inject constructor(
                 sent++
             } catch (e: IOException) {
                 // мережа, таймаут або тимчасова відмова сервера — рядок лишається як є
-                Log.w(TAG, "правка операції ${row.txId} не доїхала: ${e.message}")
+                org.syalosovetskyi.onemoney.CrashReporter.warning(TAG, "правка операції ${row.txId} не доїхала: ${e.message}", e)
                 failed++
                 networkError = true
             } catch (e: Exception) {
                 // відмова сервера — рахуємо спробу і зберігаємо причину в рядку
-                Log.e(TAG, "правка операції ${row.txId} відхилена сервером: ${e.message}", e)
+                org.syalosovetskyi.onemoney.CrashReporter.error(TAG, "правка операції ${row.txId} відхилена сервером: ${e.message}", e)
                 dao.markRejected(row.txId, row.updatedAt, e.message?.take(300) ?: e.javaClass.simpleName)
                 failed++
             }
