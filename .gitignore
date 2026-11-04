@@ -23,3 +23,7 @@ onemoney/.gradle/8.11.1/checksums/checksums.lock
 
 # рабочие файлы Kotlin-компилятора
 .kotlin/
+
+*.apk
+
+.gradle-offline/
