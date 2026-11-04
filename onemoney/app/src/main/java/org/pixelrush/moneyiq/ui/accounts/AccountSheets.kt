@@ -58,7 +58,9 @@ fun currencyDisplayName(code: String): String {
         val icu = java.util.Currency.getInstance(code).getDisplayName()
         if (icu.equals(code, ignoreCase = true)) fallback
         else icu.replaceFirstChar { it.uppercase() }
-    } catch (_: IllegalArgumentException) {
+    } catch (failure: IllegalArgumentException) {
+        android.util.Log.w("AccountSheets", "Operation failed", failure)
+
         fallback
     }
 }
@@ -174,19 +176,19 @@ fun AccountFormSheet(
     onSave:      (name: String, type: AccountType, balance: Double, color: String, currency: String, description: String, includeInTotal: Boolean, icon: String, creditLimit: Double) -> Unit,
     onDismiss:   () -> Unit
 ) {
-    var name           by remember { mutableStateOf(existing?.name ?: "") }
-    var type           by remember { mutableStateOf(existing?.type ?: initialType) }
-    var balanceStr     by remember {
+    var name           by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.name ?: "") }
+    var type           by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.type ?: initialType) }
+    var balanceStr     by androidx.compose.runtime.saveable.rememberSaveable {
         mutableStateOf(
             existing?.balance?.let { if (it == 0.0) "" else it.toBigDecimal().stripTrailingZeros().toPlainString() } ?: ""
         )
     }
-    var creditLimit    by remember { mutableStateOf(existing?.creditLimit ?: 0.0) }
-    var colorHex       by remember { mutableStateOf(existing?.colorHex ?: "#D81B60") }
-    var iconKey        by remember { mutableStateOf(existing?.icon ?: "account_balance_wallet") }
-    var currency       by remember { mutableStateOf(existing?.currency ?: "UAH") }
-    var description    by remember { mutableStateOf(existing?.description ?: "") }
-    var includeInTotal by remember { mutableStateOf(existing?.includeInTotal ?: true) }
+    var creditLimit    by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.creditLimit ?: 0.0) }
+    var colorHex       by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.colorHex ?: "#D81B60") }
+    var iconKey        by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.icon ?: "account_balance_wallet") }
+    var currency       by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.currency ?: "UAH") }
+    var description    by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.description ?: "") }
+    var includeInTotal by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.includeInTotal ?: true) }
 
     var showIconColorPicker  by remember { mutableStateOf(false) }
     var showTypePicker       by remember { mutableStateOf(false) }

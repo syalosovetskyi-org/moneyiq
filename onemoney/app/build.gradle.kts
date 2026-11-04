@@ -178,6 +178,8 @@ dependencies {
     implementation(libs.sentry.android)
 
     // Testing — unit
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation("androidx.work:work-testing:2.10.0")
     testImplementation(libs.junit)
     testImplementation("org.json:json:20231013")
     testImplementation(libs.mockk)

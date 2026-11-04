@@ -31,8 +31,6 @@ import org.syalosovetskyi.onemoney.data.db.dao.CategorySpending
 import org.syalosovetskyi.onemoney.util.formatMoney
 import org.syalosovetskyi.onemoney.ui.theme.Spacing
 import org.syalosovetskyi.onemoney.ui.theme.OneMoneyTheme
-import org.syalosovetskyi.onemoney.ui.theme.IncomeGreen
-import org.syalosovetskyi.onemoney.ui.theme.ExpenseRed
 
 @Composable
 fun ReportsScreen(
@@ -256,8 +254,8 @@ private fun SummaryCards(income: Double, expense: Double) {
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        SummaryCard(stringResource(R.string.common_incomes), income, IncomeGreen, Modifier.weight(1f))
-        SummaryCard(stringResource(R.string.common_expenses), expense, ExpenseRed, Modifier.weight(1f))
+        SummaryCard(stringResource(R.string.common_incomes), income, OneMoneyTheme.colors.incomeGreen, Modifier.weight(1f))
+        SummaryCard(stringResource(R.string.common_expenses), expense, OneMoneyTheme.colors.expenseRed, Modifier.weight(1f))
     }
     Spacer(Modifier.height(8.dp))
     val diff = income - expense
@@ -267,7 +265,7 @@ private fun SummaryCards(income: Double, expense: Double) {
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(OneMoneyTheme.dimens.cardRadius),
         colors = CardDefaults.cardColors(
-            containerColor = if (diff >= 0) IncomeGreen.copy(alpha = 0.12f) else ExpenseRed.copy(alpha = 0.12f)
+            containerColor = if (diff >= 0) OneMoneyTheme.colors.incomeGreen.copy(alpha = 0.12f) else OneMoneyTheme.colors.expenseRed.copy(alpha = 0.12f)
         )
     ) {
         Row(
@@ -281,7 +279,7 @@ private fun SummaryCards(income: Double, expense: Double) {
             Text(
                 (if (diff >= 0) "+" else "") + formatMoney(diff),
                 fontWeight = FontWeight.Bold,
-                color = if (diff >= 0) IncomeGreen else ExpenseRed
+                color = if (diff >= 0) OneMoneyTheme.colors.incomeGreen else OneMoneyTheme.colors.expenseRed
             )
         }
     }

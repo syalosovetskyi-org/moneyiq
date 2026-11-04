@@ -21,6 +21,27 @@ object BackupSerializer {
     const val BACKUP_VERSION = 1
     const val MIME_TYPE      = "application/json"
 
+    /** Validate a complete replacement before touching live tables. */
+    fun validate(data: BackupData) {
+        require(data.version == BACKUP_VERSION) { "Unsupported backup version: ${data.version}" }
+        fun ids(values: List<Long>): Set<Long> {
+            require(values.all { it > 0 } && values.distinct().size == values.size) { "Invalid or duplicate IDs" }
+            return values.toSet()
+        }
+        val accounts = ids(data.accounts.map { it.id })
+        val categories = ids(data.categories.map { it.id })
+        ids(data.transactions.map { it.id })
+        require(data.accounts.all { it.balance.isFinite() && it.creditLimit.isFinite() }) { "Invalid account amount" }
+        require(data.categories.all { it.budgetAmount.isFinite() && it.budgetAmount >= 0 &&
+            (it.parentId == null || it.parentId in categories) }) { "Invalid category" }
+        require(data.transactions.all {
+            it.amount.isFinite() && it.amount > 0 &&
+                (it.toAmount == null || (it.toAmount.isFinite() && it.toAmount > 0)) &&
+                it.accountId in accounts && (it.toAccountId == null || it.toAccountId in accounts) &&
+                (it.categoryId == null || it.categoryId in categories)
+        }) { "Invalid transaction amount or reference" }
+    }
+
     // ── Серіалізація ──────────────────────────────────────────────────────────
 
     fun serialize(data: BackupData): String {

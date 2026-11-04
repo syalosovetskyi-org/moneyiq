@@ -66,21 +66,9 @@ class DriveBackupWorker(
             )
             val json = BackupSerializer.serialize(backupData)
 
-            // Ім'я файлу — дата
-            val dateFmt  = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val fileName = "onemoney_${dateFmt.format(Date())}.json"
-
-            // Видаляємо старий бекап за сьогодні (якщо є)
-            deleteFileByName(applicationContext, folderUri, fileName)
-
-            // Створюємо новий документ у папці
-            val docUri = createDocumentInFolder(applicationContext, folderUri, fileName)
-                ?: return@withContext Result.failure()
-
-            applicationContext.contentResolver.openOutputStream(docUri)?.use { os ->
-                os.write(json.toByteArray(Charsets.UTF_8))
-                os.flush()
-            }
+            val dateFmt = SimpleDateFormat("yyyy-MM-dd_HHmmss_SSS", Locale.ROOT)
+            val fileName = "zerno_${dateFmt.format(Date())}.json"
+            writeBackupDocument(applicationContext, folderUri, fileName, json)
 
             // Зберігаємо час останнього бекапу
             ep.settingsRepository().update {
@@ -92,6 +80,9 @@ class DriveBackupWorker(
 
             Result.success()
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            android.util.Log.w("DriveBackupWorker", "Operation failed", e)
+
             Result.failure()
         }
     }
@@ -146,7 +137,11 @@ class DriveBackupWorker(
                 DocumentsContract.createDocument(
                     context.contentResolver, parentUri, "application/json", fileName
                 )
-            } catch (e: Exception) { null }
+            } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            android.util.Log.w("DriveBackupWorker", "Operation failed", e)
+            null
+        }
         }
 
         fun listBackupFiles(context: Context, treeUri: Uri): List<DriveBackupEntry> {
@@ -174,7 +169,7 @@ class DriveBackupWorker(
                     while (it.moveToNext()) {
                         val mime = it.getString(mimeIdx) ?: ""
                         val name = it.getString(nameIdx) ?: ""
-                        if (mime == "application/json" || name.endsWith(".json")) {
+                        if (!name.endsWith(".tmp") && (mime == "application/json" || name.endsWith(".json"))) {
                             result += DriveBackupEntry(
                                 documentId  = it.getString(idIdx),
                                 name        = name,
@@ -186,6 +181,8 @@ class DriveBackupWorker(
                 }
                 result.sortedByDescending { it.modifiedMs }
             } catch (e: Exception) {
+            android.util.Log.w("DriveBackupWorker", "Operation failed", e)
+
                 result
             }
         }
@@ -196,23 +193,44 @@ class DriveBackupWorker(
                 context.contentResolver.openInputStream(docUri)?.use {
                     it.bufferedReader(Charsets.UTF_8).readText()
                 }
-            } catch (e: Exception) { null }
+            } catch (e: Exception) {
+            android.util.Log.w("DriveBackupWorker", "Operation failed", e)
+            null
+        }
         }
 
-        private fun deleteFileByName(context: Context, treeUri: Uri, name: String) {
+        /** Publish only after the stream is closed. Existing backups are never deleted first.
+         * SAF atomic rename depends on the DocumentsProvider; unsupported rename fails visibly. */
+        fun writeBackupDocument(context: Context, treeUri: Uri, fileName: String, json: String) {
+            val staging = createDocumentInFolder(context, treeUri, "$fileName.${UUID.randomUUID()}.tmp")
+                ?: throw java.io.IOException("Cannot create backup staging document")
             try {
-                val found = listBackupFiles(context, treeUri).firstOrNull { it.name == name }
-                    ?: return
-                val docUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, found.documentId)
-                DocumentsContract.deleteDocument(context.contentResolver, docUri)
-            } catch (_: Exception) {}
+                val output = context.contentResolver.openOutputStream(staging)
+                    ?: throw java.io.IOException("Cannot open backup staging document")
+                output.use { it.write(json.toByteArray(Charsets.UTF_8)); it.flush() }
+                DocumentsContract.renameDocument(context.contentResolver, staging, fileName)
+                    ?: throw java.io.IOException("DocumentsProvider does not support backup rename")
+            } catch (failure: Exception) {
+                android.util.Log.w("DriveBackupWorker", "Backup publication failed", failure)
+                try {
+                    if (!DocumentsContract.deleteDocument(context.contentResolver, staging)) {
+                        android.util.Log.w("DriveBackupWorker", "Could not remove staging document")
+                    }
+                } catch (cleanup: Exception) {
+                    android.util.Log.w("DriveBackupWorker", "Staging cleanup failed", cleanup)
+                }
+                throw failure
+            }
         }
 
         fun deleteFile(context: Context, treeUri: Uri, documentId: String) {
             try {
                 val docUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId)
                 DocumentsContract.deleteDocument(context.contentResolver, docUri)
-            } catch (_: Exception) {}
+            } catch (failure: Exception) {
+                if (failure is kotlinx.coroutines.CancellationException) throw failure
+                android.util.Log.w("DriveBackupWorker", "Operation failed", failure)
+}
         }
 
         private fun pruneOldBackups(context: Context, treeUri: Uri, keepCount: Int) {
@@ -234,7 +252,11 @@ class DriveBackupWorker(
                 )?.use { c ->
                     if (c.moveToFirst()) c.getString(0) else null
                 }
-            } catch (e: Exception) { null }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                android.util.Log.w("DriveBackupWorker", "Operation failed", e)
+                null
+            }
         }
     }
 }

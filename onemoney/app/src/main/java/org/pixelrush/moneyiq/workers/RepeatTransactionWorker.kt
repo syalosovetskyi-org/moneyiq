@@ -7,6 +7,8 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.*
+import androidx.room.withTransaction
+import org.syalosovetskyi.onemoney.data.db.AppDatabase
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -29,6 +31,7 @@ import java.util.concurrent.TimeUnit
 interface RepeatWorkerEntryPoint {
     fun transactionDao(): TransactionDao
     fun accountDao(): AccountDao
+    fun database(): AppDatabase
 }
 
 class RepeatTransactionWorker(
@@ -47,18 +50,8 @@ class RepeatTransactionWorker(
             var dueTxs = txDao.getDueRepeatTransactions(today)
             while (dueTxs.isNotEmpty()) {
                 for (tx in dueTxs) {
-                    val nextDate     = tx.nextRepeatDate ?: continue
-                    val newNextDate  = calculateNextRepeatDate(nextDate, tx.repeatMode)
-                    val newTx = tx.copy(
-                        id             = 0,
-                        date           = nextDate,
-                        createdAt      = System.currentTimeMillis(),
-                        nextRepeatDate = if (tx.repeatMode != "NEVER" && newNextDate != Long.MAX_VALUE)
-                            newNextDate else null
-                    )
-                    txDao.insertTransaction(newTx)
-                    updateRepeatBalance(accDao, newTx)
-                    txDao.clearNextRepeatDate(tx.id)
+                    createRepeatOccurrence(ep.database(), tx.id, today)
+
                 }
                 dueTxs = txDao.getDueRepeatTransactions(today)
             }
@@ -166,4 +159,18 @@ internal suspend fun updateRepeatBalance(accDao: AccountDao, tx: TransactionEnti
             tx.toAccountId?.let { accDao.updateBalance(it, +(tx.toAmount ?: tx.amount)) }
         }
     }
+}
+
+/** Re-read under the write transaction: a second worker cannot consume the same due date. */
+internal suspend fun createRepeatOccurrence(db: AppDatabase, id: Long, today: Long): Boolean = db.withTransaction {
+    val dao = db.transactionDao()
+    val tx = dao.getTransactionById(id) ?: return@withTransaction false
+    val nextDate = tx.nextRepeatDate?.takeIf { it <= today } ?: return@withTransaction false
+    val newNextDate = calculateNextRepeatDate(nextDate, tx.repeatMode)
+    val next = tx.copy(id = 0, date = nextDate, createdAt = System.currentTimeMillis(),
+        nextRepeatDate = newNextDate.takeIf { tx.repeatMode != "NEVER" && it != Long.MAX_VALUE && it > nextDate })
+    dao.insertTransaction(next)
+    updateRepeatBalance(db.accountDao(), next)
+    dao.clearNextRepeatDate(id)
+    true
 }

@@ -3,7 +3,7 @@ package org.syalosovetskyi.onemoney.ui.settings.data
 import androidx.compose.ui.graphics.Color
 
 val ACCENT_COLORS: List<Color> = listOf(
-    Color(0xFF9C27B0), Color(0xFF673AB7), Color(0xFF3F51B5),
+    Color(0xFFB07A1A), Color(0xFF9C27B0), Color(0xFF673AB7), Color(0xFF3F51B5),
     Color(0xFF2196F3), Color(0xFF03A9F4), Color(0xFF00BCD4),
     Color(0xFF009688), Color(0xFF4CAF50), Color(0xFF8BC34A),
     Color(0xFFCDDC39), Color(0xFFFFC107), Color(0xFFFF9800),
@@ -49,9 +49,11 @@ val CURRENCY_FORMAT_EXAMPLES: List<String> = listOf(
 fun formatMoneyWithSettings(amount: Double, symbol: String, formatIndex: Int): String {
     val neg     = amount < 0
     val abs     = kotlin.math.abs(amount)
-    val intPart = abs.toLong()
-    val decPart = kotlin.math.round((abs - intPart) * 100).toInt().coerceIn(0, 99)
-    val decStr  = "%02d".format(decPart)
+    require(amount.isFinite()) { "Amount must be finite" }
+    val rounded = java.math.BigDecimal.valueOf(abs).setScale(2, java.math.RoundingMode.HALF_UP)
+        .toPlainString().split('.')
+    val integerDigits = rounded[0]
+    val decStr = rounded[1]
 
     data class Fmt(val grp: String, val dec: Char, val indian: Boolean, val pos: Int)
 
@@ -73,7 +75,7 @@ fun formatMoneyWithSettings(amount: Double, symbol: String, formatIndex: Int): S
     }
 
     val numStr = buildString {
-        val s = intPart.toString()
+        val s = integerDigits
         if (indian && s.length > 3) {
             val last3 = s.takeLast(3)
             val rest  = s.dropLast(3)

@@ -72,7 +72,10 @@ fun SharedCalcKeypad(
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
-        try { focusRequester.requestFocus() } catch (_: Exception) {}
+        try { focusRequester.requestFocus() } catch (failure: Exception) {
+            if (failure is kotlinx.coroutines.CancellationException) throw failure
+            android.util.Log.w("CalcKeypad", "Operation failed", failure)
+}
     }
 
     Column(

@@ -9,9 +9,14 @@ import java.util.Locale
  * утиліта, тому винесена сюди без зміни поведінки.
  */
 fun formatMoney(amount: Double, currency: String = ""): String {
+    require(amount.isFinite()) { "Amount must be finite" }
     val isWhole = amount == kotlin.math.floor(amount) && !amount.isInfinite()
-    val nf = NumberFormat.getNumberInstance(Locale.getDefault())
+    val nf = NumberFormat.getNumberInstance(Locale.forLanguageTag("uk-UA"))
     nf.minimumFractionDigits = if (isWhole) 0 else 2
     nf.maximumFractionDigits = if (isWhole) 0 else 2
-    return if (currency.isNotBlank()) "${nf.format(amount)} $currency" else nf.format(amount)
+    val number = nf.format(kotlin.math.abs(amount))
+    val signed = if (amount < 0) "−$number" else number
+    val symbol = org.syalosovetskyi.onemoney.ui.settings.data.CURRENCIES_ALL
+        .find { it.code == currency }?.symbol ?: currency
+    return if (symbol.isNotBlank()) "$signed $symbol" else signed
 }

@@ -54,8 +54,6 @@ import org.syalosovetskyi.onemoney.ui.main.horizontalSwipe
 import org.syalosovetskyi.onemoney.util.suggestCategoryStyle
 import org.syalosovetskyi.onemoney.ui.theme.Spacing
 import org.syalosovetskyi.onemoney.ui.theme.OneMoneyTheme
-import org.syalosovetskyi.onemoney.ui.theme.BudgetIncomeColor
-import org.syalosovetskyi.onemoney.ui.theme.BudgetExpenseColor
 
 // ── Розміри чипів ─────────────────────────────────────────────────────────────
 
@@ -189,7 +187,7 @@ fun CategoriesScreen(
         BudgetInputSheet(
             catRow      = BudgetCatRow(cat, catAmount),
             monthLabel  = monthLabel,
-            accentColor = if (cat.type == TransactionType.INCOME) BudgetIncomeColor else BudgetExpenseColor,
+            accentColor = if (cat.type == TransactionType.INCOME) OneMoneyTheme.colors.budgetIncome else OneMoneyTheme.colors.budgetExpense,
             amountLabel = if (cat.type == TransactionType.INCOME) stringResource(R.string.budget_received) else stringResource(R.string.budget_spent),
             onDismiss   = { budgetCategory = null },
             onConfirm   = { newBudget, _ ->

@@ -267,7 +267,8 @@ fun QuickExpenseSheet(
     onSave:     (accountId: Long, amount: Double, note: String, date: Long, repeatMode: String, reminderMode: String, categoryId: Long) -> Unit,
     onDismiss:  () -> Unit
 ) {
-    var selectedCategory by remember(category) { mutableStateOf(category) }
+    var selectedCategoryId by androidx.compose.runtime.saveable.rememberSaveable(category.id) { mutableStateOf(category.id) }
+    val selectedCategory = categories.firstOrNull { it.id == selectedCategoryId } ?: category
 
     val catColor = remember(selectedCategory.colorHex) {
         parseColorHex(selectedCategory.colorHex, FallbackCategoryColor)
@@ -281,13 +282,13 @@ fun QuickExpenseSheet(
     val calc = rememberCalcState()
 
     // ── Інший стан ────────────────────────────────────────────────────────
-    var note            by remember { mutableStateOf("") }
-    var selectedAccount by remember {
-        mutableStateOf(accounts.firstOrNull { it.isDefault } ?: accounts.firstOrNull())
+    var note            by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var selectedAccountId by androidx.compose.runtime.saveable.rememberSaveable {
+        mutableStateOf((accounts.firstOrNull { it.isDefault } ?: accounts.firstOrNull())?.id)
     }
-    var selectedDate    by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    var selectedCurrency  by remember { mutableStateOf(selectedAccount?.currency ?: "UAH") }
-    LaunchedEffect(selectedAccount?.currency) { selectedCurrency = selectedAccount?.currency ?: "UAH" }
+    val selectedAccount = accounts.firstOrNull { it.id == selectedAccountId }
+    var selectedDate    by androidx.compose.runtime.saveable.rememberSaveable { mutableLongStateOf(System.currentTimeMillis()) }
+    var selectedCurrency  by androidx.compose.runtime.saveable.rememberSaveable(selectedAccountId) { mutableStateOf(selectedAccount?.currency ?: "UAH") }
     val currencySymbol = CURRENCIES_ALL.find { it.code == selectedCurrency }?.symbol ?: selectedCurrency
 
     var showDateSheet      by remember { mutableStateOf(false) }
@@ -297,8 +298,8 @@ fun QuickExpenseSheet(
     var showAccSheet       by remember { mutableStateOf(false) }
     var showCurrencyPicker by remember { mutableStateOf(false) }
     var showCatPicker      by remember { mutableStateOf(false) }
-    var repeatMode     by remember { mutableStateOf("NEVER") }
-    var reminderMode   by remember { mutableStateOf("NEVER") }
+    var repeatMode     by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("NEVER") }
+    var reminderMode   by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("NEVER") }
     var amountError    by remember { mutableStateOf(false) }
 
     LaunchedEffect(amountError) {
@@ -530,7 +531,7 @@ fun QuickExpenseSheet(
         QuickCategoryPickerSheet(
             categories         = categories,
             selectedCategoryId = selectedCategory.id,
-            onSelect           = { selectedCategory = it; showCatPicker = false },
+            onSelect           = { selectedCategoryId = it.id; showCatPicker = false },
             onDismiss          = { showCatPicker = false }
         )
     }
@@ -582,7 +583,7 @@ fun QuickExpenseSheet(
             accounts       = accounts,
             selectedId     = selectedAccount?.id,
             label          = stringResource(R.string.tx_from_account),
-            onSelect       = { acc -> selectedAccount = acc; showAccSheet = false },
+            onSelect       = { acc -> selectedAccountId = acc.id; showAccSheet = false },
             onDismiss      = { showAccSheet = false }
         )
     }

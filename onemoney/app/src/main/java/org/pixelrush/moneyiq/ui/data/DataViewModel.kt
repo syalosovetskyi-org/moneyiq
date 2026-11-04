@@ -63,7 +63,8 @@ class DataViewModel @Inject constructor(
     private val accountDao:  AccountDao,
     private val categoryDao: CategoryDao,
     private val settingsRepo: SettingsRepository,
-    private val overrideRepo: TxOverrideRepository
+    private val overrideRepo: TxOverrideRepository,
+    private val backupStore: org.syalosovetskyi.onemoney.data.repository.BackupStore
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DataUiState())
@@ -77,13 +78,13 @@ class DataViewModel @Inject constructor(
             val driveName    = if (driveUri.isNotBlank()) {
                 runCatching {
                     DriveBackupWorker.getFolderDisplayName(context, Uri.parse(driveUri))
-                }.getOrNull() ?: driveUri.substringAfterLast("/")
+                }.onFailure { android.util.Log.w("DataViewModel", "Folder name unavailable", it) }.getOrNull() ?: driveUri.substringAfterLast("/")
             } else ""
             val driveBackups = if (driveUri.isNotBlank()) {
                 withContext(Dispatchers.IO) {
                     runCatching {
                         DriveBackupWorker.listBackupFiles(context, Uri.parse(driveUri))
-                    }.getOrDefault(emptyList())
+                    }.onFailure { android.util.Log.w("DataViewModel", "Backup list unavailable", it) }.getOrDefault(emptyList())
                 }
             } else emptyList()
 
@@ -115,12 +116,16 @@ class DataViewModel @Inject constructor(
     fun writeExportToUri(context: Context, uri: Uri, json: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                context.contentResolver.openOutputStream(uri)?.use { os ->
+                (context.contentResolver.openOutputStream(uri)
+                    ?: throw java.io.IOException("Cannot open export document")).use { os ->
                     os.write(json.toByteArray(Charsets.UTF_8))
                     os.flush()
                 }
                 showMessage(context.getString(R.string.data_export_saved))
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                android.util.Log.w("DataViewModel", "Data operation failed", e)
+
                 showMessage(context.getString(R.string.data_write_error, e.message ?: ""))
             }
         }
@@ -141,6 +146,9 @@ class DataViewModel @Inject constructor(
                         data.accounts.size, data.categories.size, data.transactions.size))
                 loadState(context)
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                android.util.Log.w("DataViewModel", "Data operation failed", e)
+
                 showMessage(context.getString(R.string.data_import_error, e.message ?: ""))
             } finally {
                 _state.value = _state.value.copy(isImporting = false)
@@ -149,20 +157,18 @@ class DataViewModel @Inject constructor(
     }
 
     private suspend fun importBackupData(data: BackupData) = withContext(Dispatchers.IO) {
-        val sanitizedCategories = data.categories.map { normalizeImportedCategory(it) }
-        txDao.deleteAllTransactions()
-        accountDao.deleteAllAccounts()
-        categoryDao.deleteAllCategories()
-        accountDao.insertAccounts(data.accounts)
-        categoryDao.insertCategories(sanitizedCategories)
-        txDao.insertTransactions(data.transactions)
+        backupStore.replace(data)
     }
 
     suspend fun buildCsvShareIntentSuspend(context: Context): android.content.Intent? = withContext(Dispatchers.IO) {
         try {
             val all = txDao.getAllTransactionsWithDetails()
             CsvExporter.export(context, all)
-        } catch (e: Exception) { null }
+        } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                android.util.Log.w("DataViewModel", "Data operation failed", e)
+                null
+            }
     }
 
     fun configureDriveFolder(context: Context, treeUri: Uri) {
@@ -226,18 +232,11 @@ class DataViewModel @Inject constructor(
                     )
                 }
                 val treeUri  = Uri.parse(folderUri)
-                val dateFmt  = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                val fileName = "onemoney_${dateFmt.format(Date())}.json"
+                val dateFmt = SimpleDateFormat("yyyy-MM-dd_HHmmss_SSS", Locale.ROOT)
+                val fileName = "zerno_${dateFmt.format(Date())}.json"
                 val ok = withContext(Dispatchers.IO) {
-                    try {
-                        val docUri = DriveBackupWorker.createDocumentInFolder(context, treeUri, fileName)
-                            ?: return@withContext false
-                        context.contentResolver.openOutputStream(docUri)?.use { os ->
-                            os.write(json.toByteArray(Charsets.UTF_8))
-                            os.flush()
-                        }
-                        true
-                    } catch (e: Exception) { false }
+                    DriveBackupWorker.writeBackupDocument(context, treeUri, fileName, json)
+                    true
                 }
                 if (ok) {
                     val now = System.currentTimeMillis()
@@ -250,6 +249,9 @@ class DataViewModel @Inject constructor(
                     showMessage(context.getString(R.string.data_drive_write_error))
                 }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                android.util.Log.w("DataViewModel", "Data operation failed", e)
+
                 showMessage(context.getString(R.string.data_error, e.message ?: ""))
             } finally {
                 _state.value = _state.value.copy(isBacking = false)
@@ -269,6 +271,9 @@ class DataViewModel @Inject constructor(
                 showMessage(context.getString(R.string.data_restored_from_drive, entry.name))
                 loadState(context)
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                android.util.Log.w("DataViewModel", "Data operation failed", e)
+
                 showMessage(context.getString(R.string.data_restore_error, e.message ?: ""))
             } finally {
                 _state.value = _state.value.copy(isImporting = false)
@@ -366,6 +371,9 @@ class DataViewModel @Inject constructor(
                     data.accounts.size, data.transactions.size))
                 loadState(context)
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                android.util.Log.w("DataViewModel", "Data operation failed", e)
+
                 showMessage(context.getString(R.string.data_monoflow_error, e.message ?: ""))
             } finally {
                 _state.value = _state.value.copy(isSyncing = false)
@@ -386,10 +394,12 @@ class DataViewModel @Inject constructor(
                 val txCount  = txDao.count()
                 val accCount = accountDao.count()
                 val catCount = categoryDao.count()
-                val dbFile   = context.getDatabasePath("onemoney.db")
+                val json = BackupSerializer.serialize(backupStore.snapshot())
                 val backupDir = File(context.filesDir, "backups").also { it.mkdirs() }
                 val ts = System.currentTimeMillis()
-                dbFile.copyTo(File(backupDir, "backup_$ts.db"), overwrite = true)
+                org.syalosovetskyi.onemoney.util.writeAtomicBackup(File(backupDir, "backup_$ts.json")) {
+                    it.write(json.toByteArray(Charsets.UTF_8))
+                }
                 val entry = BackupEntry(ts, txCount, accCount, catCount)
                 val prefs = context.getSharedPreferences("onemoney_backups", Context.MODE_PRIVATE)
                 val current = parseLocalBackupsFromPrefs(prefs).toMutableList()
@@ -401,6 +411,9 @@ class DataViewModel @Inject constructor(
                     Toast.makeText(context, context.getString(R.string.data_backup_created), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                android.util.Log.w("DataViewModel", "Data operation failed", e)
+
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, context.getString(R.string.data_error, e.message ?: ""), Toast.LENGTH_LONG).show()
                 }

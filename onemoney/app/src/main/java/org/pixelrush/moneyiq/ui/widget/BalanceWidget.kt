@@ -70,7 +70,7 @@ class BalanceWidget : GlanceAppWidget() {
         Row(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(ColorProvider(Color(0xFF4D5C92)))
+                .background(ColorProvider(Color(0xFF7C581C)))
                 .clickable(actionStartActivity(intent))
                 .padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically

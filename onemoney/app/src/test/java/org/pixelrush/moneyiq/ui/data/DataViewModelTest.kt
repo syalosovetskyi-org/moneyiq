@@ -33,7 +33,7 @@ class DataViewModelTest {
     private val settingsRepo: SettingsRepository = mockk(relaxed = true)
     private val overrideRepo: TxOverrideRepository = mockk(relaxed = true)
 
-    private fun buildVm() = DataViewModel(txDao, accountDao, categoryDao, settingsRepo, overrideRepo)
+    private fun buildVm() = DataViewModel(txDao, accountDao, categoryDao, settingsRepo, overrideRepo, mockk(relaxed = true))
 
     @Test
     fun `buildExportJson serializes all dao data`() = runTest {

@@ -21,7 +21,7 @@ class NotificationWorker(
             createChannel(applicationContext)
             val notif = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("onemoney")
+                .setContentTitle("Zerno")
                 .setContentText("Час додати сьогоднішні витрати 💰")
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true)

@@ -10,4 +10,4 @@ import androidx.core.graphics.toColorInt
  */
 fun parseColorHex(hex: String?, fallback: Color): Color =
     if (hex.isNullOrBlank()) fallback
-    else runCatching { Color(hex.toColorInt()) }.getOrDefault(fallback)
+    else runCatching { Color(hex.toColorInt()) }.onFailure { android.util.Log.w("ColorHex", "Invalid stored color; using fallback", it) }.getOrDefault(fallback)

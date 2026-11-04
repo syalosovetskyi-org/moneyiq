@@ -87,6 +87,7 @@ class MonoFlowSyncWorker(
 
             Result.success()
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             // Retry при мережевих помилках, failure при parse-помилках.
             // Мовчазного провалу тут бути не може: невдалий синк ззовні виглядає
             // точно як «нових даних немає», і причина має лишитися в лозі.

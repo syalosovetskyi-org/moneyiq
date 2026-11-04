@@ -34,8 +34,6 @@ import org.syalosovetskyi.onemoney.ui.theme.Spacing
 import org.syalosovetskyi.onemoney.ui.theme.OneMoneyTheme
 import org.syalosovetskyi.onemoney.ui.theme.AccentIndigo
 import org.syalosovetskyi.onemoney.ui.theme.AccentTeal
-import org.syalosovetskyi.onemoney.ui.theme.ExpenseRed
-import org.syalosovetskyi.onemoney.ui.theme.IncomeGreen
 import org.syalosovetskyi.onemoney.ui.theme.FallbackIconColor
 import java.text.SimpleDateFormat
 import java.util.*
@@ -43,8 +41,6 @@ import java.util.*
 private val PanelFromColor    = AccentIndigo   // рахунок-джерело (витрата/дохід)
 private val TransferFromColor = AccentTeal     // рахунок-джерело (переказ)
 private val TransferToColor   = AccentIndigo   // рахунок-призначення
-private val ExpenseColor      = ExpenseRed     // уніфіковано (було E53935)
-private val IncomeColor       = IncomeGreen    // уніфіковано (було 43A047)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,7 +52,7 @@ fun AddTransactionScreen(
     val calc  = rememberCalcState()
 
     // Ініціалізуємо калькулятор у режимі редагування
-    var editInitialized by remember { mutableStateOf(false) }
+    var editInitialized by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(state.isEditMode, state.amount) {
         if (state.isEditMode && !editInitialized && state.amount.isNotBlank()) {
             val amt = state.amount.replace(",", ".").toDoubleOrNull() ?: return@LaunchedEffect
@@ -70,7 +66,7 @@ fun AddTransactionScreen(
 
     LaunchedEffect(state.saved) { if (state.saved) onNavigateBack() }
 
-    var showDeleteDialog    by remember { mutableStateOf(false) }
+    var showDeleteDialog    by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var showDatePicker      by remember { mutableStateOf(false) }
     var showFromAccPicker   by remember { mutableStateOf(false) }
     var showCatPicker       by remember { mutableStateOf(false) }
@@ -94,7 +90,7 @@ fun AddTransactionScreen(
     val fromAccount  = state.accounts.firstOrNull { it.id == state.selectedAccountId }
     val toAccount    = state.accounts.firstOrNull { it.id == state.selectedToAccountId }
 
-    var selectedCurrency by remember { mutableStateOf(fromAccount?.currency ?: "UAH") }
+    var selectedCurrency by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(fromAccount?.currency ?: "UAH") }
     LaunchedEffect(fromAccount?.currency) {
         selectedCurrency = fromAccount?.currency ?: "UAH"
     }
@@ -108,7 +104,10 @@ fun AddTransactionScreen(
 
     val fromCatColor = remember(fromCategory?.colorHex) {
         fromCategory?.colorHex?.let {
-            try { Color(it.toColorInt()) } catch (_: Exception) { null }
+            try { Color(it.toColorInt()) } catch (failure: Exception) {
+            android.util.Log.w("AddTransactionScreen", "Operation failed", failure)
+            null
+        }
         }
     }
 
@@ -119,8 +118,8 @@ fun AddTransactionScreen(
     }
     val accentColor = when (state.type) {
         TransactionType.TRANSFER -> TransferToColor
-        TransactionType.INCOME   -> IncomeColor
-        else                     -> ExpenseColor
+        TransactionType.INCOME   -> OneMoneyTheme.colors.incomeGreen
+        else                     -> OneMoneyTheme.colors.expenseRed
     }
 
     fun onSave() {

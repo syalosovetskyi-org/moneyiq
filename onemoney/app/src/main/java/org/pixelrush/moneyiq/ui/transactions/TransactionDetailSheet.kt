@@ -43,9 +43,6 @@ import org.syalosovetskyi.onemoney.ui.theme.AccentIndigo
 import org.syalosovetskyi.onemoney.ui.theme.AccentTeal
 import org.syalosovetskyi.onemoney.ui.theme.FallbackAccountColor
 import org.syalosovetskyi.onemoney.ui.theme.FallbackIconColor
-import org.syalosovetskyi.onemoney.ui.theme.IncomeGreen
-import org.syalosovetskyi.onemoney.ui.theme.ExpenseRed
-import org.syalosovetskyi.onemoney.ui.theme.TransferBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,14 +56,14 @@ internal fun TransactionDetailSheet(
     onDuplicate: () -> Unit,
     onSave:      (note: String, amount: Double, date: Long, categoryId: Long?, moveToAccountId: Long?) -> Unit
 ) {
-    val calc = rememberCalcState()
+    val calc = rememberCalcState(tx.amount)
 
-    var note         by remember(tx.id) { mutableStateOf(tx.note) }
-    var selectedDate by remember(tx.id) { mutableStateOf(tx.date) }
-    var categoryId   by remember(tx.id) { mutableStateOf(tx.categoryId) }
-    var isDirty      by remember(tx.id) { mutableStateOf(false) }
+    var note         by androidx.compose.runtime.saveable.rememberSaveable(tx.id) { mutableStateOf(tx.note) }
+    var selectedDate by androidx.compose.runtime.saveable.rememberSaveable(tx.id) { mutableStateOf(tx.date) }
+    var categoryId   by androidx.compose.runtime.saveable.rememberSaveable(tx.id) { mutableStateOf(tx.categoryId) }
+    var isDirty      by androidx.compose.runtime.saveable.rememberSaveable(tx.id) { mutableStateOf(false) }
     var showCalc     by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var showDateSheet    by remember { mutableStateOf(false) }
     var showFullDate     by remember { mutableStateOf(false) }
     var showCatPicker    by remember { mutableStateOf(false) }
@@ -74,15 +71,8 @@ internal fun TransactionDetailSheet(
     var pendingTransferCat by remember { mutableStateOf<CategoryEntity?>(null) }
     // Витрата + рахунок = переміщення своїх грошей; теж питаємо підтвердження
     var pendingMoveAccount by remember { mutableStateOf<AccountEntity?>(null) }
-    var moveToAccountId    by remember(tx.id) { mutableStateOf<Long?>(null) }
+    var moveToAccountId    by androidx.compose.runtime.saveable.rememberSaveable(tx.id) { mutableStateOf<Long?>(null) }
 
-    LaunchedEffect(tx.id) {
-        val v = tx.amount
-        calc.currentStr = when {
-            v == v.toLong().toDouble() -> v.toLong().toString()
-            else -> v.toBigDecimal().stripTrailingZeros().toPlainString().replace(".", ",")
-        }
-    }
 
     val accountColor = remember(tx.accountColor) {
         parseColorHex(tx.accountColor, FallbackAccountColor)
@@ -94,7 +84,11 @@ internal fun TransactionDetailSheet(
     val catColor = remember(tx.categoryColor, selectedCat) {
         val hex = selectedCat?.colorHex ?: tx.categoryColor
         hex?.let {
-            try { Color(it.toColorInt()) } catch (_: Exception) { null }
+            try { Color(it.toColorInt()) } catch (failure: Exception) {
+                if (failure is kotlinx.coroutines.CancellationException) throw failure
+                android.util.Log.w("TransactionDetailSheet", "Operation failed", failure)
+                null
+            }
         }
     }
     // Рахунок, на який операцію щойно позначили перемістити (ще не збережено)
@@ -118,9 +112,9 @@ internal fun TransactionDetailSheet(
         else             -> FallbackIconColor
     }
     val accentColor = when (effectiveType) {     // колір суми — уніфіковано до семантики
-        TransactionType.TRANSFER -> TransferBlue
-        TransactionType.INCOME   -> IncomeGreen
-        else                     -> ExpenseRed
+        TransactionType.TRANSFER -> OneMoneyTheme.colors.transferBlue
+        TransactionType.INCOME   -> OneMoneyTheme.colors.incomeGreen
+        else                     -> OneMoneyTheme.colors.expenseRed
     }
     val keyBg   = MaterialTheme.colorScheme.surfaceVariant
     val screenH = LocalConfiguration.current.screenHeightDp.dp

@@ -34,9 +34,6 @@ import org.syalosovetskyi.onemoney.ui.categories.categoryIconFor
 import org.syalosovetskyi.onemoney.util.formatMoney
 import org.syalosovetskyi.onemoney.ui.theme.Spacing
 import org.syalosovetskyi.onemoney.ui.theme.OneMoneyTheme
-import org.syalosovetskyi.onemoney.ui.theme.IncomeGreen
-import org.syalosovetskyi.onemoney.ui.theme.ExpenseRed
-import org.syalosovetskyi.onemoney.ui.theme.TransferBlue
 import org.syalosovetskyi.onemoney.ui.theme.FallbackAccountColor
 import org.syalosovetskyi.onemoney.ui.theme.AccentBlueGrey
 
@@ -56,9 +53,9 @@ internal fun TxSearchScreen(
     onReset:            () -> Unit,
     onDone:             () -> Unit
 ) {
-    val expenseColor  = ExpenseRed    // уніфіковано до семантики (було E91E63)
-    val incomeColor   = IncomeGreen   // уніфіковано (було 009688)
-    val transferColor = TransferBlue  // уніфіковано (було 607D8B)
+    val expenseColor  = OneMoneyTheme.colors.expenseRed    // уніфіковано до семантики (було E91E63)
+    val incomeColor   = OneMoneyTheme.colors.incomeGreen   // уніфіковано (було 009688)
+    val transferColor = OneMoneyTheme.colors.transferBlue  // уніфіковано (було 607D8B)
 
     Dialog(
         onDismissRequest = onDone,

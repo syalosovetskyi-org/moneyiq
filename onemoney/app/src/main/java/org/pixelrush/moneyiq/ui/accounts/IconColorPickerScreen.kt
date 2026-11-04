@@ -266,9 +266,9 @@ fun IconColorPickerScreen(
     onResult:        (iconKey: String, colorHex: String) -> Unit,
     onDismiss:       () -> Unit
 ) {
-    var selectedIcon  by remember { mutableStateOf(initialIconKey) }
-    var selectedColor by remember { mutableStateOf(initialColorHex) }
-    var tab           by remember { mutableIntStateOf(0) }
+    var selectedIcon  by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(initialIconKey) }
+    var selectedColor by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(initialColorHex) }
+    var tab           by androidx.compose.runtime.saveable.rememberSaveable { mutableIntStateOf(0) }
 
     val previewColor = remember(selectedColor) {
         parseColorHex(selectedColor, FallbackAccountColor)

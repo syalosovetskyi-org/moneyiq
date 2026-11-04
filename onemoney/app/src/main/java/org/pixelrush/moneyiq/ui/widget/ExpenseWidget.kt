@@ -44,7 +44,7 @@ class ExpenseWidget : GlanceAppWidget() {
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(ColorProvider(Color(0xFF4D5C92)))
+                .background(ColorProvider(Color(0xFF7C581C)))
                 .clickable(actionStartActivity(intent)),
             contentAlignment = Alignment.Center
         ) {

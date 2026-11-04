@@ -20,7 +20,8 @@ data class BudgetSelMonth(val year: Int, val month: Int)
 
 data class BudgetCatRow(
     val category: CategoryEntity,
-    val amount:   Double
+    val amount:   Double,
+    val budgetForPeriod: Double = category.budgetAmount
 )
 
 data class BudgetSectionData(
@@ -75,8 +76,8 @@ class BudgetViewModel @Inject constructor(
         ) { expCats, incCats, expSpend, incSpend, rawBalance ->
             val expMap  = expSpend.associate { it.categoryId to it.total }
             val incMap  = incSpend.associate { it.categoryId to it.total }
-            val expRows = expCats.map { BudgetCatRow(it, expMap[it.id] ?: 0.0) }
-            val incRows = incCats.map { BudgetCatRow(it, incMap[it.id] ?: 0.0) }
+            val expRows = expCats.map { BudgetCatRow(it, expMap[it.id] ?: 0.0, periodBudget(it, totalDays)) }
+            val incRows = incCats.map { BudgetCatRow(it, incMap[it.id] ?: 0.0, periodBudget(it, totalDays)) }
             BudgetUiState(
                 selectedMonth  = sel,
                 appMonth       = am,
@@ -84,8 +85,8 @@ class BudgetViewModel @Inject constructor(
                 daysPassed     = daysPassed,
                 pillBadge      = monthRepo.pillBadge(am),
                 totalBalance   = rawBalance ?: 0.0,
-                expenseSection = BudgetSectionData(expCats.sumOf { it.budgetAmount }, expRows.sumOf { it.amount }, expRows),
-                incomeSection  = BudgetSectionData(incCats.sumOf { it.budgetAmount }, incRows.sumOf { it.amount }, incRows)
+                expenseSection = BudgetSectionData(expRows.sumOf { it.budgetForPeriod }, expRows.sumOf { it.amount }, expRows),
+                incomeSection  = BudgetSectionData(incRows.sumOf { it.budgetForPeriod }, incRows.sumOf { it.amount }, incRows)
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), BudgetUiState())
@@ -107,3 +108,7 @@ class BudgetViewModel @Inject constructor(
         }
     }
 }
+
+/** Weekly limits accrue per calendar day; a seven-day selection gets exactly one weekly limit. */
+internal fun periodBudget(category: CategoryEntity, days: Int): Double =
+    if (category.budgetPeriod == "WEEKLY") category.budgetAmount * days / 7.0 else category.budgetAmount

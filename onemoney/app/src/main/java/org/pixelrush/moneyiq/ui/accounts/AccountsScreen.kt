@@ -450,19 +450,11 @@ private fun MyFinancesTab(
     state:         AccountsUiState,
     bottomPadding: Dp
 ) {
-    val totalAssets = state.accounts
-        .filter { it.type != AccountType.DEBT && it.includeInTotal && it.balance > 0 }
-        .sumOf { it.balance }
-    val totalDebts = state.accounts
-        .filter { it.includeInTotal }
-        .sumOf { acc ->
-            when {
-                acc.type == AccountType.DEBT -> acc.balance
-                acc.balance < 0             -> -acc.balance
-                else                        -> 0.0
-            }
-        }
-    val net = totalAssets - totalDebts
+    val totals = org.syalosovetskyi.onemoney.util.accountCurrencyTotals(state.accounts)
+    val totalAssets = totals.entries.joinToString("\n") { (currency, total) -> formatMoney(total.assets, currency) }
+    val totalDebts = totals.entries.joinToString("\n") { (currency, total) -> formatMoney(total.debts, currency) }
+    val netText = totals.entries.joinToString("\n") { (currency, total) -> formatMoney(total.net, currency) }
+    val hasDebt = totals.values.any { it.net < 0 }
 
     LazyColumn(
         contentPadding = PaddingValues(
@@ -535,10 +527,10 @@ private fun MyFinancesTab(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            formatMoney(net),
+                            netText,
                             style      = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Medium,
-                            color      = if (net < 0) MaterialTheme.colorScheme.error
+                            color      = if (hasDebt) MaterialTheme.colorScheme.error
                                          else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     }
@@ -564,17 +556,16 @@ private fun FinanceHeaderCell(text: String, modifier: Modifier) {
 }
 
 @Composable
-private fun FinanceValueCell(amount: Double, modifier: Modifier, isDebt: Boolean = false) {
+private fun FinanceValueCell(amount: String, modifier: Modifier, isDebt: Boolean = false) {
     Box(
         modifier         = modifier.padding(vertical = Spacing.lg, horizontal = Spacing.sm),
         contentAlignment = Alignment.Center
     ) {
         Text(
-            formatMoney(amount),
+            amount,
             style      = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
             color      = when {
-                amount == 0.0 -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                 isDebt        -> MaterialTheme.colorScheme.error
                 else          -> MaterialTheme.colorScheme.onSurface
             }

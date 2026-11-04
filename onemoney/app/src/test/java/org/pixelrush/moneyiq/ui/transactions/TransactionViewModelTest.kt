@@ -266,4 +266,28 @@ class TransactionViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+
+    @Test
+    fun `non finite amounts never reach repository`() = runTest {
+        for (value in listOf("NaN", "Infinity", "1e309")) {
+            val vm = createVm()
+            vm.setAccount(1L)
+            vm.setAmount(value)
+            vm.save()
+            assertNotNull(vm.state.value.error)
+        }
+        coVerify(exactly = 0) { txRepo.addTransaction(any()) }
+    }
+
+    @Test
+    fun `editing note preserves recurrence and historical fields`() = runTest {
+        val original = TransactionEntity(id = 1L, type = TransactionType.EXPENSE,
+            amount = 50.0, accountId = 1L, createdAt = 123L,
+            repeatMode = "WEEKLY", reminderMode = "1_DAY", nextRepeatDate = 999L)
+        coEvery { txRepo.getById(1L) } returns original
+        val vm = createVm(SavedStateHandle(mapOf("txId" to 1L)))
+        vm.setNote("Updated")
+        vm.save()
+        coVerify { txRepo.updateTransaction(original, original.copy(note = "Updated")) }
+    }
 }

@@ -1569,3 +1569,33 @@ Icon(DoubleChevronRight, tint = if (isCurrentMonth) Color(0xFF111111) else Month
   `RemoteServiceException$CrashedByAdbException`, level 5 — причём в кеш офлайна, а на
   сервер уехало при следующем старте, то есть путь «упал → переоткрыл» тоже работает;
 - в данных обоих событий ключей `screenshot`/`attachment` нет.
+
+## ADR-076: Zerno identity and weekly budget allowance (2026-11-04, #2673)
+
+Zerno replaces the visible app brand; applicationId, namespace, package directories,
+DB name and backup JSON `app` identifier remain compatible with existing installs.
+Default accent seed is `#B07A1A`. The seed selects the exact supplied M3 schemes;
+existing explicitly saved accents still use `applyAccent`. Monetary colors resolve
+through the existing `OneMoneyTheme.colors` CompositionLocal in both themes.
+
+Weekly budget allowance accrues by calendar days in the selected range:
+`storedWeeklyLimit * daysInPeriod / 7`. A seven-day range receives one weekly limit.
+`BudgetCatRow.budgetForPeriod` holds the displayed allowance; editing continues to
+use the stored `category.budgetAmount`, so saving never multiplies it again.
+This does not resolve mixed-currency budget aggregates; that remains open.
+
+Backup replacement validates IDs, references and finite amounts before writing,
+then replaces all three financial tables in one Room transaction (`BackupStore`).
+Local backups use a JSON snapshot of Room instead of copying an active SQLite file
+without its WAL. Publication uses a sibling temporary file, fsync and atomic move.
+SAF backups close a staging document then rename; unsupported provider rename fails
+visibly and never deletes the preceding backup. Provider-level atomicity cannot be
+promised by Android's DocumentsContract and still needs device/provider testing.
+
+Recurring occurrences re-read the due marker inside the same transaction as insertion,
+balance updates and clearing the old marker. A stale worker claim cannot consume it twice.
+No schema change: Room remains v34; no new columns, tables or migration required.
+
+Validation: independent SQL/XML/contrast checks pass. Kotlin compilation, Room,
+Compose and Worker tests have not run due to environment restrictions; see
+`zerno-2673-report.md`. This entry records implementation intent, not acceptance.

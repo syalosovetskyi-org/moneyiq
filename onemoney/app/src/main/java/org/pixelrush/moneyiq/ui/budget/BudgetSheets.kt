@@ -57,9 +57,8 @@ internal fun BudgetInputSheet(
     val onCatColor   = if (isLightBg) OnLightColor else Color.White
     val displayColor = if (isLightBg) OnLightColor else catColor
 
-    var pickedCurrency     by remember { mutableStateOf(catRow.category.currencyCode) }
+    var pickedCurrency     by androidx.compose.runtime.saveable.rememberSaveable(catRow.category.id) { mutableStateOf(catRow.category.currencyCode) }
     var showCurrencyPicker by remember { mutableStateOf(false) }
-    LaunchedEffect(catRow.category.id) { pickedCurrency = catRow.category.currencyCode }
     val currencySymbol = CURRENCIES_ALL.find { it.code == pickedCurrency }?.symbol ?: pickedCurrency
 
     val calc           = rememberCalcState(catRow.category.budgetAmount)

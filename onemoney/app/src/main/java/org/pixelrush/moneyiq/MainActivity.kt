@@ -115,7 +115,7 @@ class MainActivity : FragmentActivity() {
         })
 
         val info = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("onemoney")
+            .setTitle("Zerno")
             .setSubtitle("Підтвердіть особу для входу")
             .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
             .build()

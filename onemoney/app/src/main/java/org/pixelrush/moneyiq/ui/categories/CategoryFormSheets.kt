@@ -77,22 +77,22 @@ fun CategoryFormSheet(
     onDelete:              (() -> Unit)?              = null,
     onDismiss:             () -> Unit
 ) {
-    var name     by remember { mutableStateOf(existing?.name     ?: "") }
-    var type     by remember { mutableStateOf(existing?.type     ?: defaultType) }
-    var colorHex by remember { mutableStateOf(existing?.colorHex ?: CATEGORY_FORM_COLORS.first()) }
-    var iconKey  by remember { mutableStateOf(existing?.icon     ?: "category") }
-    var budget   by remember {
+    var name     by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.name     ?: "") }
+    var type     by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.type     ?: defaultType) }
+    var colorHex by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.colorHex ?: CATEGORY_FORM_COLORS.first()) }
+    var iconKey  by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.icon     ?: "category") }
+    var budget   by androidx.compose.runtime.saveable.rememberSaveable {
         mutableStateOf(
             existing?.budgetAmount?.takeIf { it > 0.0 }
                 ?.let { it.toBigDecimal().stripTrailingZeros().toPlainString() } ?: ""
         )
     }
-    var period        by remember { mutableStateOf(existing?.budgetPeriod ?: "MONTHLY") }
-    var archived      by remember { mutableStateOf(existing?.archived ?: false) }
-    var currencyCode  by remember { mutableStateOf(existing?.currencyCode ?: "UAH") }
+    var period        by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.budgetPeriod ?: "MONTHLY") }
+    var archived      by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.archived ?: false) }
+    var currencyCode  by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.currencyCode ?: "UAH") }
 
     var showIconPicker     by remember { mutableStateOf(false) }
-    var showDeleteConfirm  by remember { mutableStateOf(false) }
+    var showDeleteConfirm  by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var showBudgetCalc     by remember { mutableStateOf(false) }
     var showCurrencyPicker by remember { mutableStateOf(false) }
     var showParentPicker   by remember { mutableStateOf(false) }
@@ -689,12 +689,12 @@ internal fun ColorIconPickerSheet(
     onSave:       (color: String, icon: String) -> Unit,
     onDismiss:    () -> Unit
 ) {
-    var selectedColor by remember { mutableStateOf(currentColor) }
-    var selectedIcon  by remember { mutableStateOf(currentIcon) }
+    var selectedColor by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(currentColor) }
+    var selectedIcon  by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(currentIcon) }
     val color by remember { derivedStateOf {
         parseColorHex(selectedColor, FallbackCategoryColor)
     } }
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by androidx.compose.runtime.saveable.rememberSaveable { mutableIntStateOf(0) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -863,7 +863,7 @@ fun EditCategoriesScreen(
     onDelete:           (CategoryEntity) -> Unit,
     onDismiss:          () -> Unit
 ) {
-    var selectedTab       by remember { mutableIntStateOf(0) }
+    var selectedTab       by androidx.compose.runtime.saveable.rememberSaveable { mutableIntStateOf(0) }
     var editCategory      by remember { mutableStateOf<CategoryEntity?>(null) }
     var addSubcategoryTo  by remember { mutableStateOf<CategoryEntity?>(null) }
     var showAddSheet      by remember { mutableStateOf(false) }

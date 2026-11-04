@@ -50,7 +50,7 @@ class CurrencyRatesRepository @Inject constructor(
                 runCatching {
                     val o = JSONObject(json)
                     o.keys().forEach { k -> put(k, o.getDouble(k)) }
-                }
+                }.onFailure { android.util.Log.w("CurrencyRatesRepository", "Invalid cached rates", it) }
             }
         }
     }
@@ -67,11 +67,14 @@ class CurrencyRatesRepository @Inject constructor(
         }
     }
 
-    /** Оновлює курси, якщо кеш старіший за [maxAgeMs]. Мережеві помилки — тихо. */
+    /** Оновлює курси, якщо кеш старіший за [maxAgeMs]. Мережеві помилки логуються; кеш зберігається. */
     suspend fun refreshIfStale(maxAgeMs: Long = STALE_AFTER_MS) {
         val updated = lastUpdated.first()
         if (System.currentTimeMillis() - updated > maxAgeMs) {
-            runCatching { refresh() }
+            runCatching { refresh() }.onFailure {
+                if (it is kotlinx.coroutines.CancellationException) throw it
+                android.util.Log.w("CurrencyRatesRepository", "Rate refresh failed; retaining cache", it)
+            }
         }
     }
 

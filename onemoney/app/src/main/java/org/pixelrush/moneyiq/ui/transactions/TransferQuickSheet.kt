@@ -35,7 +35,6 @@ import org.syalosovetskyi.onemoney.ui.components.calculator.txDateLabelPublic
 import org.syalosovetskyi.onemoney.ui.theme.Spacing
 import org.syalosovetskyi.onemoney.ui.theme.OneMoneyTheme
 import org.syalosovetskyi.onemoney.ui.theme.FallbackAccountColor
-import org.syalosovetskyi.onemoney.ui.theme.TransferBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,7 +63,7 @@ internal fun TransferQuickSheet(
     val toColor = remember(selectedTo?.colorHex) {
         parseColorHex(selectedTo?.colorHex, FallbackAccountColor)
     }
-    val transferColor = TransferBlue   // уніфіковано до семантики (було 5C6BC0)
+    val transferColor = OneMoneyTheme.colors.transferBlue   // уніфіковано до семантики (було 5C6BC0)
     val keyBg = MaterialTheme.colorScheme.surfaceVariant
     val screenH = LocalConfiguration.current.screenHeightDp.dp
 

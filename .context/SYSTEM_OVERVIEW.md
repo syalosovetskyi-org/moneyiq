@@ -90,3 +90,12 @@ Node.js runtime: GitHub Actions runners use Node.js 24 by default (Node.js 20 de
 - `.context` docs explain expected architecture and implementation constraints.
 - `.context/ui/` — UI contracts split into 8 files; `UI_CONTRACTS.md` is the index.
 - `README.md` is public-facing project documentation.
+
+## Zerno worktree follow-up (#2673, 2026-11-04; not yet validated)
+
+Visible branding is being changed to Zerno without changing runtime package identifiers.
+`BackupStore` owns transactional snapshots/replacement; `AtomicBackupFile` publishes local
+JSON snapshots via staging/atomic move. Recurring worker occurrence generation now consumes
+its due marker atomically with insertion/balances. Weekly budgets expose a range allowance
+separate from the stored weekly limit. See ADR-076 and `zerno-2673-report.md` for limitations.
+The expanded test sources have not been compiled or run in this restricted environment.

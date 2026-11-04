@@ -225,4 +225,24 @@ class CalcStateTest {
         assertEquals(8.0, calc.pendingVal, 0.001)
         assertEquals("×", calc.pendingOp)
     }
+
+    @Test
+    fun `non finite initial value is safe`() {
+        for (value in listOf(Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY)) {
+            val calc = CalcStateHolder(value)
+            org.junit.Assert.assertTrue(calc.result().isFinite())
+            calc.onKey("=")
+        }
+    }
+
+    @Test
+    fun `overflow from repeated multiplication cannot crash or save infinity`() {
+        val calc = CalcStateHolder(999999999999.0)
+        repeat(40) {
+            calc.onKey("×")
+            "999999999999".forEach { calc.onKey(it.toString()) }
+            calc.onKey("=")
+        }
+        org.junit.Assert.assertTrue(calc.result().isFinite())
+    }
 }

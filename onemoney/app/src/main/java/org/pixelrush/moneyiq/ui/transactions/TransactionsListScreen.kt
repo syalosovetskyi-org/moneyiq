@@ -133,8 +133,7 @@ fun TransactionsListScreen(
     val isFiltered = filterQuery.isNotBlank() || filterTypes.isNotEmpty() ||
                      filterAccountIds.isNotEmpty() || filterCategoryIds.isNotEmpty()
 
-    val filteredIncome   = filteredTransactions.filter { it.type == TransactionType.INCOME || it.type == TransactionType.BORROW }.sumOf { it.amount }
-    val filteredExpense  = filteredTransactions.filter { it.type == TransactionType.EXPENSE || it.type == TransactionType.LEND || it.type == TransactionType.REPAY }.sumOf { it.amount }
+    val totalsByCurrency = org.syalosovetskyi.onemoney.util.currencyTotals(filteredTransactions)
 
     // ── Витрати за категоріями (для пікера) ───────────────────────────────
     val categorySpending = remember(state.transactions) {
@@ -190,7 +189,11 @@ fun TransactionsListScreen(
             if (filteredTransactions.isEmpty()) {
                 EmptyMonthState(sel = state.selectedMonth, isFiltered = isFiltered)
             } else {
-                TxMonthSummaryRow(income = filteredIncome, expense = filteredExpense)
+                totalsByCurrency.forEach { (currency, totals) ->
+                    Text(currency, modifier = Modifier.padding(horizontal = Spacing.lg),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    TxMonthSummaryRow(income = totals.income, expense = totals.expense)
+                }
                 TransactionsList(
                     transactions  = filteredTransactions,
                     bottomPadding = padding.calculateBottomPadding(),

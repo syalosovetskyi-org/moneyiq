@@ -9,7 +9,7 @@ class CalcStateHolder(initial: Double = 0.0) {
 
     var currentStr by mutableStateOf(
         when {
-            initial <= 0.0                         -> "0"
+            !initial.isFinite() || initial <= 0.0                         -> "0"
             initial == initial.toLong().toDouble() -> initial.toLong().toString()
             else -> initial.toBigDecimal().stripTrailingZeros().toPlainString().replace(".", ",")
         }
@@ -19,12 +19,16 @@ class CalcStateHolder(initial: Double = 0.0) {
 
     fun result(): Double {
         val c = currentStr.replace(",", ".").toDoubleOrNull() ?: 0.0
-        return when (pendingOp) {
+        val value = when (pendingOp) {
             "+"  -> pendingVal + c
             "−"  -> pendingVal - c
             "×"  -> pendingVal * c
             "÷"  -> if (c != 0.0) pendingVal / c else pendingVal
             else -> c
+        }
+        return if (value.isFinite()) value else {
+            android.util.Log.w("CalcState", "Rejected non-finite calculator result")
+            0.0
         }
     }
 
@@ -60,6 +64,7 @@ class CalcStateHolder(initial: Double = 0.0) {
                     currentStr = if (currentStr == "0") "0," else "$currentStr,"
             }
             else -> {
+                if (key.length != 1 || key[0] !in '0'..'9') return
                 val dotIdx = currentStr.indexOfFirst { it == ',' || it == '.' }
                 currentStr = when {
                     dotIdx >= 0 && currentStr.length - dotIdx > 2 -> currentStr
@@ -74,4 +79,11 @@ class CalcStateHolder(initial: Double = 0.0) {
 
 @Composable
 fun rememberCalcState(initial: Double = 0.0): CalcStateHolder =
-    remember { CalcStateHolder(initial) }
+    androidx.compose.runtime.saveable.rememberSaveable(saver = androidx.compose.runtime.saveable.listSaver<CalcStateHolder, String>(
+        save = { listOf(it.currentStr, it.pendingVal.toString(), it.pendingOp ?: "") },
+        restore = { saved -> CalcStateHolder().apply {
+            currentStr = saved[0]
+            pendingVal = saved[1].toDoubleOrNull()?.takeIf { it.isFinite() } ?: 0.0
+            pendingOp = saved[2].takeIf { it.isNotEmpty() }
+        } }
+    )) { CalcStateHolder(initial) }

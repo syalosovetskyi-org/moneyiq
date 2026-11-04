@@ -96,7 +96,10 @@ internal fun CategoryChip(
     val groupBg = remember(groupColorHex) {
         groupColorHex?.let {
             try { Color(it.toColorInt()).copy(alpha = 0.13f) }
-            catch (_: Exception) { null }
+            catch (failure: Exception) {
+            android.util.Log.w("CategoriesWidgets", "Operation failed", failure)
+            null
+        }
         }
     }
 

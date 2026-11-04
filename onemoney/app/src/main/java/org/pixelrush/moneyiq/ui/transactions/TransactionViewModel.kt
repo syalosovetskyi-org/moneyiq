@@ -99,7 +99,7 @@ class TransactionViewModel @Inject constructor(
     fun save() {
         val s = _state.value
         val amount = s.amount.replace(",", ".").toDoubleOrNull()
-        if (amount == null || amount <= 0) {
+        if (amount == null || !amount.isFinite() || amount <= 0) {
             _state.update { it.copy(error = "Введіть коректну суму") }
             return
         }
@@ -117,8 +117,7 @@ class TransactionViewModel @Inject constructor(
             try {
                 if (s.isEditMode && editingId != null && originalTx != null) {
                     // Редактирование существующей транзакции
-                    val newTx = TransactionEntity(
-                        id = editingId,
+                    val newTx = originalTx!!.copy(
                         type = s.type,
                         amount = amount,
                         accountId = s.selectedAccountId,
@@ -144,6 +143,8 @@ class TransactionViewModel @Inject constructor(
                 }
                 _state.update { it.copy(isSaving = false, saved = true) }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                android.util.Log.w("TransactionViewModel", "Transaction write failed", e)
                 _state.update { it.copy(isSaving = false, error = e.message ?: "Помилка збереження") }
             }
         }
@@ -157,6 +158,8 @@ class TransactionViewModel @Inject constructor(
                 txRepo.deleteTransaction(orig)
                 _state.update { it.copy(isSaving = false, saved = true) }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                android.util.Log.w("TransactionViewModel", "Transaction write failed", e)
                 _state.update { it.copy(isSaving = false, error = e.message ?: "Помилка видалення") }
             }
         }

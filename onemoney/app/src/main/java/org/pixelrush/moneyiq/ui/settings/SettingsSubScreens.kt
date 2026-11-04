@@ -340,7 +340,7 @@ internal fun AboutPageContent(onBack: () -> Unit) {
             Spacer(Modifier.height(20.dp))
 
             Text(
-                "onemoney",
+                "Zerno",
                 style      = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color      = MaterialTheme.colorScheme.onSurface

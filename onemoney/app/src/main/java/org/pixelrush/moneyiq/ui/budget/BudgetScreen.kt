@@ -55,6 +55,7 @@ fun BudgetScreen(
     val expenseColor        = appColors.budgetExpense
     val incomeColor         = appColors.budgetIncome
     val monthLabel          = "${stringArrayResource(R.array.month_names)[state.selectedMonth.month]} ${state.selectedMonth.year}"
+    var confirmDeleteBudget by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var showSettingsSheet      by remember { mutableStateOf(false) }
     var currentExpensesMode   by remember { mutableStateOf(false) }
     val settingsVisible        = showSettings || showSettingsSheet
@@ -166,10 +167,19 @@ fun BudgetScreen(
             monthLabel          = monthLabel,
             currentExpensesMode = currentExpensesMode,
             onToggleMode        = { currentExpensesMode = it },
-            onDeleteBudget      = { viewModel.clearAllBudgets(); showSettingsSheet = false; onSettingsDismiss() },
+            onDeleteBudget      = { confirmDeleteBudget = true; showSettingsSheet = false; onSettingsDismiss() },
             onDismiss           = { showSettingsSheet = false; onSettingsDismiss() }
         )
     }
+    if (confirmDeleteBudget) {
+        org.syalosovetskyi.onemoney.ui.components.dialogs.ConfirmationDialog(
+            title = stringResource(R.string.budget_delete_confirm_title),
+            message = stringResource(R.string.budget_delete_confirm_message),
+            onConfirm = { viewModel.clearAllBudgets(); confirmDeleteBudget = false },
+            onDismiss = { confirmDeleteBudget = false }
+        )
+    }
+
 }
 
 // ── Іконка категорії з авто-підказкою ────────────────────────────────────────
@@ -357,10 +367,10 @@ private fun BudgetCatFullRow(
     val color     = remember(row.category.colorHex) {
         parseColorHex(row.category.colorHex, accentColor)
     }
-    val remaining = row.category.budgetAmount - row.amount
+    val remaining = row.budgetForPeriod - row.amount
     val isOver    = remaining < 0
-    val progress  = if (row.category.budgetAmount > 0.0)
-        (row.amount / row.category.budgetAmount).coerceIn(0.0, 1.0).toFloat()
+    val progress  = if (row.budgetForPeriod > 0.0)
+        (row.amount / row.budgetForPeriod).coerceIn(0.0, 1.0).toFloat()
     else 0f
     val trackColor = MaterialTheme.colorScheme.surface
 
@@ -450,7 +460,7 @@ private fun BudgetCatFullRow(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
                 )
                 Text(
-                    "${formatMoney(row.category.budgetAmount)} ₴",
+                    "${formatMoney(row.budgetForPeriod)} ₴",
                     style      = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color      = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
