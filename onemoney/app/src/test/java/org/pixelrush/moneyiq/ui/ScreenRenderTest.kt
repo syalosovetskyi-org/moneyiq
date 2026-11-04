@@ -67,7 +67,9 @@ class ScreenRenderTest {
         render { OverviewScreen(viewModel = vm) }
         compose.runOnIdle { flow.value = OverviewUiState(monthExpense = 20.0,
             categories = listOf(OverviewCatRow(1, "Test overview", "#123456", "grocery", 20.0, 1f, 100.0))) }
-        compose.onNodeWithText("Test overview").assertExists()
+        // The category follows the chart/stats and is outside the initial viewport.
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Test overview"))
+        compose.onNodeWithText("Test overview").assertIsDisplayed()
     }
 
     @Test fun reports_empty_then_period_data() {

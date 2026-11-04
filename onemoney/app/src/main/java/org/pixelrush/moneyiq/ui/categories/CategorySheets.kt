@@ -736,13 +736,15 @@ internal fun groupedByParent(
     type:                 TransactionType,
     includeSubcategories: Boolean,
 ): List<CategoryEntity> {
+    val byName = Collator.getInstance(java.util.Locale.forLanguageTag("uk")).apply {
+        strength = Collator.SECONDARY
+    }
     val visible = categories.filter { !it.archived && it.type == type }
     val roots = visible.filter { it.parentId == null }.sortedWith(
-        compareBy<CategoryEntity> { it.sortOrder }.thenBy { it.name }
+        compareBy<CategoryEntity> { it.sortOrder }.thenComparator { a, b -> byName.compare(a.name, b.name) }
     )
     if (!includeSubcategories) return roots
 
-    val byName = Collator.getInstance()
     val children = visible.filter { it.parentId != null }.groupBy { it.parentId }
 
     val ordered = mutableListOf<CategoryEntity>()

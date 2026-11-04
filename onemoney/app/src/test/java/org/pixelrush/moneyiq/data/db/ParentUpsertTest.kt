@@ -17,7 +17,7 @@ import org.syalosovetskyi.onemoney.data.db.entities.TransactionEntity
 import org.syalosovetskyi.onemoney.data.db.entities.TransactionType
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [28])
+@Config(sdk = [28], application = android.app.Application::class)
 class ParentUpsertTest {
     private lateinit var db: AppDatabase
 

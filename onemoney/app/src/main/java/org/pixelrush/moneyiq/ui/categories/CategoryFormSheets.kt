@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -107,10 +108,6 @@ fun CategoryFormSheet(
         keyboardController?.hide()
     }
 
-    // Для нової категорії — авто-фокус на полі назви
-    LaunchedEffect(Unit) {
-        if (existing == null) nameFocusRequester.requestFocus()
-    }
 
     // Авто-підказка стилю при введенні назви нової категорії
     LaunchedEffect(name) {
@@ -184,6 +181,7 @@ fun CategoryFormSheet(
                         catColor           = catColor,
                         iconKey            = iconKey,
                         nameFocusRequester = nameFocusRequester,
+                        autoFocus = existing == null,
                         onNameFocusChange  = { isNameFocused = it },
                         onImeDone          = { focusManager.clearFocus(); keyboardController?.hide() },
                         onIconClick        = { showIconPicker = true }
@@ -550,10 +548,19 @@ private fun CategoryFormHeader(
     catColor:           Color,
     iconKey:            String,
     nameFocusRequester: FocusRequester,
+    autoFocus: Boolean,
     onNameFocusChange:  (Boolean) -> Unit,
     onImeDone:          () -> Unit,
     onIconClick:        () -> Unit,
 ) {
+    var placed by remember { mutableStateOf(false) }
+    LaunchedEffect(placed, autoFocus) {
+        if (placed && autoFocus) {
+            try { nameFocusRequester.requestFocus() } catch (failure: IllegalStateException) {
+                org.syalosovetskyi.onemoney.CrashReporter.warning("CategoryForm", "Name field detached before focus", failure)
+            }
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -581,6 +588,7 @@ private fun CategoryFormHeader(
                 modifier       = Modifier
                     .fillMaxWidth()
                     .focusRequester(nameFocusRequester)
+                    .onGloballyPositioned { placed = it.isAttached }
                     .onFocusChanged { onNameFocusChange(it.isFocused) },
                 decorationBox  = { inner ->
                     Box {
