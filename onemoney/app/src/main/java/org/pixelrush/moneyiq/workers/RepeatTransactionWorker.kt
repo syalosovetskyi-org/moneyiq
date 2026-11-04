@@ -3,6 +3,7 @@ package org.syalosovetskyi.onemoney.workers
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.*
@@ -15,6 +16,7 @@ import kotlinx.coroutines.withContext
 import org.syalosovetskyi.onemoney.R
 import org.syalosovetskyi.onemoney.data.db.dao.AccountDao
 import org.syalosovetskyi.onemoney.data.db.dao.TransactionDao
+import org.syalosovetskyi.onemoney.data.db.entities.TransactionEntity
 import org.syalosovetskyi.onemoney.data.db.entities.TransactionType
 import org.syalosovetskyi.onemoney.util.calculateNextRepeatDate
 import org.syalosovetskyi.onemoney.util.reminderOffsetDays
@@ -55,7 +57,7 @@ class RepeatTransactionWorker(
                             newNextDate else null
                     )
                     txDao.insertTransaction(newTx)
-                    updateBalance(accDao, newTx)
+                    updateRepeatBalance(accDao, newTx)
                     txDao.clearNextRepeatDate(tx.id)
                 }
                 dueTxs = txDao.getDueRepeatTransactions(today)
@@ -75,25 +77,10 @@ class RepeatTransactionWorker(
 
             scheduleNext(applicationContext)
             Result.success()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            Log.w("RepeatTransactionWorker", "Failed to process recurring transactions", e)
             Result.retry()
-        }
-    }
-
-    private suspend fun updateBalance(accDao: AccountDao, tx: org.syalosovetskyi.onemoney.data.db.entities.TransactionEntity) {
-        when (tx.type) {
-            TransactionType.INCOME   -> accDao.updateBalance(tx.accountId, +tx.amount)
-            TransactionType.EXPENSE  -> accDao.updateBalance(tx.accountId, -tx.amount)
-            TransactionType.BORROW   -> accDao.updateBalance(tx.accountId, +tx.amount)
-            TransactionType.LEND     -> accDao.updateBalance(tx.accountId, -tx.amount)
-            TransactionType.TRANSFER -> {
-                accDao.updateBalance(tx.accountId, -tx.amount)
-                tx.toAccountId?.let { accDao.updateBalance(it, +tx.amount) }
-            }
-            TransactionType.REPAY    -> {
-                accDao.updateBalance(tx.accountId, -tx.amount)
-                tx.toAccountId?.let { accDao.updateBalance(it, +tx.amount) }
-            }
         }
     }
 
@@ -160,6 +147,23 @@ class RepeatTransactionWorker(
                 set(Calendar.MILLISECOND, 0)
             }
             return maxOf(target.timeInMillis - System.currentTimeMillis(), 60_000L)
+        }
+    }
+}
+
+internal suspend fun updateRepeatBalance(accDao: AccountDao, tx: TransactionEntity) {
+    when (tx.type) {
+        TransactionType.INCOME   -> accDao.updateBalance(tx.accountId, +tx.amount)
+        TransactionType.EXPENSE  -> accDao.updateBalance(tx.accountId, -tx.amount)
+        TransactionType.BORROW   -> accDao.updateBalance(tx.accountId, +tx.amount)
+        TransactionType.LEND     -> accDao.updateBalance(tx.accountId, -tx.amount)
+        TransactionType.TRANSFER -> {
+            accDao.updateBalance(tx.accountId, -tx.amount)
+            tx.toAccountId?.let { accDao.updateBalance(it, +(tx.toAmount ?: tx.amount)) }
+        }
+        TransactionType.REPAY    -> {
+            accDao.updateBalance(tx.accountId, -tx.amount)
+            tx.toAccountId?.let { accDao.updateBalance(it, +(tx.toAmount ?: tx.amount)) }
         }
     }
 }

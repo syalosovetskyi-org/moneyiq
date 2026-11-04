@@ -260,4 +260,29 @@ class TransactionRepositoryTest {
         coVerify { accountDao.updateBalance(2L, +20.0) }   // зарахування в доларах
         coVerify { txDao.updateTransaction(new.copy(toAmount = 20.0)) }
     }
+
+    @Test
+    fun `changing transfer source currency recalculates credit`() = runTest {
+        coEvery { accountDao.getAccountById(3L) } returns account(3L, "USD")
+        coEvery { accountDao.getAccountById(2L) } returns account(2L, "USD")
+        val old = TransactionEntity(id = 7L, type = TransactionType.TRANSFER,
+            amount = 820.0, accountId = 1L, toAccountId = 2L, toAmount = 20.0)
+        val updated = old.copy(accountId = 3L)
+        repo.updateTransaction(old, updated)
+        coVerify { txDao.updateTransaction(updated.copy(toAmount = 820.0)) }
+        coVerify { accountDao.updateBalance(2L, -20.0) }
+        coVerify { accountDao.updateBalance(2L, 820.0) }
+    }
+
+    @Test
+    fun `editing transfer note preserves historical credit after rate change`() = runTest {
+        every { ratesRepo.rates } returns flowOf(mapOf("UAH" to 1.0, "USD" to 50.0))
+        val old = TransactionEntity(id = 7L, type = TransactionType.TRANSFER,
+            amount = 820.0, accountId = 1L, toAccountId = 2L, toAmount = 20.0)
+        val updated = old.copy(note = "edited")
+        repo.updateTransaction(old, updated)
+        coVerify { txDao.updateTransaction(updated) }
+        coVerify { accountDao.updateBalance(2L, -20.0) }
+        coVerify { accountDao.updateBalance(2L, 20.0) }
+    }
 }

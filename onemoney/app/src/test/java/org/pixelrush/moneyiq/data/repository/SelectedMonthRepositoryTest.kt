@@ -259,4 +259,46 @@ class SelectedMonthRepositoryTest {
         repo.setPeriod(target)
         assertEquals(target, repo.month.value)
     }
+
+    @Test
+    fun `range counts calendar days across spring DST`() {
+        val previous = java.util.TimeZone.getDefault()
+        try {
+            java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Europe/Berlin"))
+            val zone = java.time.ZoneId.of("Europe/Berlin")
+            val from = java.time.LocalDate.of(2026, 3, 28).atStartOfDay(zone).toInstant().toEpochMilli()
+            val to = java.time.LocalDate.of(2026, 3, 30).atStartOfDay(zone).toInstant().toEpochMilli()
+            assertEquals(3, repo.daysInPeriod(AppMonth(2026, 2, PeriodMode.RANGE, from, to)))
+        } finally {
+            java.util.TimeZone.setDefault(previous)
+        }
+    }
+
+    @Test
+    fun `month range includes DST transition without losing boundary milliseconds`() {
+        val previous = java.util.TimeZone.getDefault()
+        try {
+            java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Europe/Berlin"))
+            val zone = java.time.ZoneId.of("Europe/Berlin")
+            val (from, to) = repo.computeRange(AppMonth(2026, 2))
+            assertEquals(java.time.LocalDate.of(2026, 3, 1).atStartOfDay(zone).toInstant().toEpochMilli(), from)
+            assertEquals(java.time.LocalDate.of(2026, 4, 1).atStartOfDay(zone).toInstant().toEpochMilli() - 1, to)
+        } finally {
+            java.util.TimeZone.setDefault(previous)
+        }
+    }
+
+    @Test
+    fun `range counts whole calendar days across autumn DST`() {
+        val previous = java.util.TimeZone.getDefault()
+        try {
+            java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Europe/Berlin"))
+            val zone = java.time.ZoneId.of("Europe/Berlin")
+            val from = java.time.LocalDate.of(2026, 10, 24).atStartOfDay(zone).toInstant().toEpochMilli()
+            val to = java.time.LocalDate.of(2026, 10, 26).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+            assertEquals(2, repo.daysInPeriod(AppMonth(2026, 9, PeriodMode.RANGE, from, to)))
+        } finally {
+            java.util.TimeZone.setDefault(previous)
+        }
+    }
 }

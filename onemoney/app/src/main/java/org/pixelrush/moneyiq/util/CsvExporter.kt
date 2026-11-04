@@ -31,7 +31,7 @@ object CsvExporter {
         }
     }
 
-    private fun buildCsvFile(
+    internal fun buildCsvFile(
         context: Context,
         transactions: List<TransactionWithDetails>
     ): File {
@@ -48,7 +48,7 @@ object CsvExporter {
                 val cols = listOf(
                     dateFmt.format(Date(tx.date)),
                     tx.type.label(),
-                    "%.2f".format(tx.amount),
+                    "%.2f".format(Locale.ROOT, tx.amount),
                     tx.accountName.csvEscape(),
                     (tx.toAccountName ?: "").csvEscape(),
                     (tx.categoryName ?: "").csvEscape(),

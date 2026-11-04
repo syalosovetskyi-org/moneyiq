@@ -168,4 +168,20 @@ class ReportsViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+
+    @Test
+    fun `month range includes first and last millisecond`() {
+        val cal = java.util.Calendar.getInstance().apply {
+            set(2026, java.util.Calendar.MARCH, 15, 12, 30, 30)
+            set(java.util.Calendar.MILLISECOND, 456)
+        }
+        val (from, to) = vm.monthRange(cal)
+        val start = cal.clone() as java.util.Calendar
+        start.set(2026, java.util.Calendar.MARCH, 1, 0, 0, 0)
+        start.set(java.util.Calendar.MILLISECOND, 0)
+        val end = start.clone() as java.util.Calendar
+        end.add(java.util.Calendar.MONTH, 1)
+        assertEquals(start.timeInMillis, from)
+        assertEquals(end.timeInMillis - 1, to)
+    }
 }

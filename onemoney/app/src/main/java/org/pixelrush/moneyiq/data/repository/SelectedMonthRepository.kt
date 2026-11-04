@@ -4,6 +4,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.Calendar
+import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -103,7 +106,12 @@ class SelectedMonthRepository @Inject constructor() {
         PeriodMode.YEAR   -> if (a.year % 4 == 0 && (a.year % 100 != 0 || a.year % 400 == 0)) 366 else 365
         PeriodMode.ALL    -> 0
         PeriodMode.DAY    -> 1
-        PeriodMode.RANGE  -> ((a.toMillis - a.fromMillis) / 86_400_000 + 1).toInt().coerceAtLeast(1)
+        PeriodMode.RANGE  -> {
+            val zone = ZoneId.systemDefault()
+            val from = Instant.ofEpochMilli(a.fromMillis).atZone(zone).toLocalDate()
+            val to = Instant.ofEpochMilli(a.toMillis).atZone(zone).toLocalDate()
+            (ChronoUnit.DAYS.between(from, to) + 1).coerceAtLeast(1).toInt()
+        }
     }
 
     fun pillBadge(a: AppMonth): String = when (a.mode) {

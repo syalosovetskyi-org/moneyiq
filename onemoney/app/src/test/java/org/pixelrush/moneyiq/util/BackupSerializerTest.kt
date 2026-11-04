@@ -264,4 +264,21 @@ class BackupSerializerTest {
         val restored = BackupSerializer.deserialize(BackupSerializer.serialize(backup))
         assertEquals(3, restored.transactions.size)
     }
+
+    @Test
+    fun `foreign transfer preserves credited amount through backup`() {
+        val original = sampleBackup().copy(transactions = listOf(
+            TransactionEntity(id = 7L, type = TransactionType.TRANSFER,
+                amount = 820.0, accountId = 1L, toAccountId = 2L, toAmount = 20.0)
+        ))
+        val restored = BackupSerializer.deserialize(BackupSerializer.serialize(original))
+        assertEquals(20.0, restored.transactions.single().toAmount!!, 0.0)
+    }
+
+    @Test
+    fun `old backup without credited amount remains readable`() {
+        val root = JSONObject(BackupSerializer.serialize(sampleBackup()))
+        root.getJSONArray("transactions").getJSONObject(0).remove("toAmount")
+        assertNull(BackupSerializer.deserialize(root.toString()).transactions.single().toAmount)
+    }
 }

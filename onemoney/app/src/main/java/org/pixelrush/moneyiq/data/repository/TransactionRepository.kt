@@ -119,9 +119,10 @@ class TransactionRepository @Inject constructor(
     /** Откатывает балансовые изменения старой транзакции, применяет новые. */
     suspend fun updateTransaction(oldTx: TransactionEntity, newTx: TransactionEntity) {
         val oldCredited = oldTx.toAmount ?: oldTx.amount
-        // Сумма пересчитывается заново, если поменялись сумма или счёт-получатель;
+        // Сумма пересчитывается заново, если поменялись сумма или любой из счетов;
         // иначе остаётся прежней — курс с тех пор мог уехать, а баланс сойтись должен.
-        val keepsCredit = newTx.toAccountId == oldTx.toAccountId && newTx.amount == oldTx.amount
+        val keepsCredit = newTx.accountId == oldTx.accountId &&
+            newTx.toAccountId == oldTx.toAccountId && newTx.amount == oldTx.amount
         val newCredited = when {
             newTx.toAccountId == null -> newTx.amount
             keepsCredit && oldTx.toAmount != null -> oldCredited

@@ -79,6 +79,7 @@ object BackupSerializer {
                 put("amount",      t.amount)
                 put("accountId",   t.accountId)
                 put("toAccountId", t.toAccountId ?: JSONObject.NULL)
+                put("toAmount",    t.toAmount ?: JSONObject.NULL)
                 put("categoryId",  t.categoryId  ?: JSONObject.NULL)
                 put("note",           t.note)
                 put("date",           t.date)
@@ -151,6 +152,7 @@ object BackupSerializer {
                 amount      = t.getDouble("amount"),
                 accountId   = t.getLong("accountId"),
                 toAccountId = if (!t.has("toAccountId") || t.isNull("toAccountId")) null else t.getLong("toAccountId"),
+                toAmount    = if (t.has("toAmount") && !t.isNull("toAmount")) t.getDouble("toAmount") else null,
                 categoryId  = if (!t.has("categoryId")  || t.isNull("categoryId"))  null else t.getLong("categoryId"),
                 note           = t.optString("note", ""),
                 date           = t.getLong("date"),

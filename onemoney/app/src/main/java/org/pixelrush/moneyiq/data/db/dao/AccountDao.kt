@@ -16,7 +16,7 @@ interface AccountDao {
     @Query("SELECT SUM(balance) FROM accounts WHERE includeInTotal = 1")
     fun getTotalBalance(): Flow<Double?>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertAccount(account: AccountEntity): Long
 
     @Update
@@ -40,7 +40,7 @@ interface AccountDao {
     @Query("SELECT * FROM accounts ORDER BY sortOrder ASC, name ASC")
     suspend fun getAllAccountsOnce(): List<AccountEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertAccounts(accounts: List<AccountEntity>)
 
     @Query("DELETE FROM accounts")

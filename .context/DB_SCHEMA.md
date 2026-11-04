@@ -138,3 +138,10 @@ Indices:
 - `33 -> 34`: **structural** — adds `transactions.toAmount REAL` (nullable). NULL читается как «столько же, сколько списано», то есть поведение до миграции
 
 Any schema change must add a migration and update this file.
+
+## DAO write safety (2026-11-04)
+
+AccountDao and CategoryDao use `@Upsert` for single and bulk insert-or-update.
+This preserves transaction foreign keys during sync and saves. The schema remains
+v34; no tables or columns changed. SQLite REPLACE would delete parent rows and
+trigger CASCADE/SET NULL before reinserting them.
