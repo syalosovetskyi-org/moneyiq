@@ -104,7 +104,7 @@ android {
         }
         create("play") {
             dimension = "distribution"
-            applicationId = "org.syalosovetskyi.onemoney"
+            applicationId = "ua.syalosovetskyi.zerno"
         }
     }
 

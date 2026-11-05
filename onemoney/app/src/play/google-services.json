@@ -99,6 +99,25 @@
           "other_platform_oauth_client": []
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:372849411579:android:b7a2a2def7562b39c6375e",
+        "android_client_info": {
+          "package_name": "ua.syalosovetskyi.zerno"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJY_iRRuVQmkSx7G9_NKeuTM4ZFts8cgg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
     }
   ],
   "configuration_version": "1"
