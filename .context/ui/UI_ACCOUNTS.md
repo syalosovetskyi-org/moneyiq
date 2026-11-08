@@ -20,6 +20,21 @@
 
 **Rule:** When adding new action callbacks to `AccountsScreen`, always wire them in `MainScreen` — never leave them at the default `{}`. A silent no-op is indistinguishable from a crash to the user.
 
+## Account Row Description
+
+`AccountListItem` shows `account.description` directly below the name only when
+`description.isNotBlank()`. It uses `MaterialTheme.typography.bodySmall` (12sp,
+Regular) and `colorScheme.onSurfaceVariant`, with `maxLines = 1` and
+`TextOverflow.Ellipsis`. For example: `VOO · 3,72 шт × $612,40`.
+
+The existing balance remains below the name/description block; the icon and action
+menu are preserved. Empty or whitespace-only descriptions add neither a text node
+nor spacing, preserving the existing row height. The text column and row have no
+fixed height, so they grow with the system font scale.
+
+Regression coverage: `AccountsDescriptionTest` (Compose/Robolectric), at font
+scales 1× and 2×, including removal of an existing description and blank values.
+
 ## Account Icon Currency Badge
 
 Every account icon has a small **currency symbol badge** at bottom-right:

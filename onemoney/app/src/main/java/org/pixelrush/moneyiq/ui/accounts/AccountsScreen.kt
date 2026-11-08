@@ -278,6 +278,15 @@ private fun AccountListItem(
                 overflow  = TextOverflow.Ellipsis,
                 color     = MaterialTheme.colorScheme.onSurface
             )
+            if (account.description.isNotBlank()) {
+                Text(
+                    text     = account.description,
+                    style    = MaterialTheme.typography.bodySmall,
+                    color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             Spacer(Modifier.height(2.dp))
             val balColor = when {
                 account.balance < 0    -> MaterialTheme.colorScheme.error
