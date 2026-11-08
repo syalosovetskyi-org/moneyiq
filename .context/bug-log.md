@@ -47,3 +47,18 @@ report; actual red/green execution is unavailable. No Kotlin fix is claimed veri
 | Form input lost on rotation | remember instead of rememberSaveable; init effect overwrites restored calculator | Account/category forms, QuickExpenseSheet, icon picker, budget currency, TransactionDetailSheet, CalcState use saveable fields/IDs | `FormRestorationTest`; parent sheet selection and transfer form remain open |
 | Dark money colors have insufficient contrast | Light-only semantic constants used by UI | `ui/theme/Theme.kt`, `OneMoneyTokens.kt`, money UI: supplied light/dark tokens via existing CompositionLocal | `ZernoColorTest`; independent contrast calculation passes, visual audit not run |
 | Exceptions disappear without diagnostics | Empty catch or runCatching fallback | Worker, VM, color parser, settings, rate cache: warning/error logging; cancellation propagated in updated coroutine paths | Static inspection only; no runtime logging validation |
+
+## Personal emulator regressions and local commands — 2026-11-08 (#2673)
+
+Shell: Linux Bash. Gradle, Kotlin compilation and tests **not run**, as requested.
+Verification to run outside this environment:
+`cd onemoney && ./gradlew :app:testPersonalDebugUnitTest :app:testPlayDebugUnitTest :app:assemblePersonalDebug :app:assemblePlayDebug`.
+
+| Symptom | Root cause | Fix / files | Regression |
+|---|---|---|---|
+| Fresh Wallet was RUB with Russian name | Hardcoded initial seed | MoneyIQApp.kt + localized strings: UAH/localized default only on empty accounts | InitialAccountTest |
+| Total/Overview 0 despite negative foreign balance; category/ring showed original amount as UAH | Missing rates silently zeroed in AccountRepository, DAO aggregates mixed native amounts | BaseValuation.kt, AccountRepository.kt, TransactionRepository.kt, CurrencyStatusViewModel.kt, MainScreen.kt: convert before sums, explicit partial status; pickers/widget show separate units | PersonalCurrencyRegressionTest bugs 2/3/5 |
+| Opening 200, Closing 0 after first 200 expense | Current balance in UAH combined with unconverted period movement; historical periods also used current balance | BaseValuation.periodBalances + TransactionsListViewModel: reconstruct both boundaries including transfers/later rows | PersonalCurrencyRegressionTest bug 4 and historical/excluded-transfer cases |
+| Forecast displayed without income/budget | hasForecast checked only elapsed days and spending | BudgetScreen.kt + canForecast: require income or income budget | PersonalCurrencyRegressionTest bug 6 |
+| Play exposed personal sync; unconfigured worker succeeded | Credentials/worker/UI gates belonged to shared debug configuration | Flavor BuildConfig/defaults, MonoFlowPolicy, workers, app schedule reconciliation, Data UI: personal only, explicit not_configured failure | Both MonoFlowFlavorTest variants, WorkerBehaviorTest |
+| API add/undo must not mutate manual rows or partially update balances | New local command boundary needs caller trust and durable ownership | personal/alisaphone service/verifier/commands, personal manifest, signed API IDs + backup validation | CallerVerifierTest, AndroidCallerVerifierTest, ApiRequestTest, AlisaphoneCommandsTest including Room rollback and backup round trip |

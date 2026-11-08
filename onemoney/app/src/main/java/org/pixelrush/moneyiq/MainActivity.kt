@@ -33,6 +33,8 @@ class MainActivity : FragmentActivity() {
 
     @Inject lateinit var settingsRepository: SettingsRepository
 
+    private val screenRequestId = mutableLongStateOf(0L)
+    private val requestedScreen = mutableStateOf<String?>(null)
     private var lastPausedAt = 0L
     private var isUnlocked   = mutableStateOf(true)
 
@@ -43,6 +45,7 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestedScreen.value = intent.getStringExtra("zerno.screen")
         enableEdgeToEdge()
         setContent {
             val settings by settingsRepository.settings.collectAsStateWithLifecycle(
@@ -62,11 +65,18 @@ class MainActivity : FragmentActivity() {
                     if (!unlocked) {
                         LockScreen(onUnlock = { triggerBiometric() })
                     } else {
-                        onemoneyNavGraph()
+                        onemoneyNavGraph(requestedScreen = requestedScreen.value, screenRequestId = screenRequestId.longValue)
                     }
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        screenRequestId.longValue++
+        requestedScreen.value = intent.getStringExtra("zerno.screen")
     }
 
     override fun onPause() {

@@ -3,6 +3,9 @@ package org.syalosovetskyi.onemoney.data.repository
 import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import org.syalosovetskyi.onemoney.util.*
 import org.syalosovetskyi.onemoney.data.db.dao.AccountDao
 import org.syalosovetskyi.onemoney.data.db.dao.CategorySpending
 import org.syalosovetskyi.onemoney.data.db.dao.TransactionDao
@@ -62,21 +65,39 @@ class TransactionRepository @Inject constructor(
     fun getTransactionsByPeriod(from: Long, to: Long): Flow<List<TransactionWithDetails>> =
         transactionDao.getTransactionsByDateRange(from, to)
 
+    fun getBaseTransactionsByPeriod(from: Long, to: Long): Flow<List<TransactionWithDetails>> =
+        combine(transactionDao.getTransactionsByDateRange(from, to), ratesRepo.rates) { rows, rates ->
+            rows.mapNotNull { row -> baseRate(row.accountCurrency, rates)?.let {
+                row.copy(amount = row.amount * it, accountCurrency = "UAH")
+            } }
+        }
+
+    fun getPeriodBalances(from: Long, to: Long): Flow<PeriodBalances> =
+        combine(accountDao.getAllAccounts(), transactionDao.observeAllTransactions(), ratesRepo.rates) { accounts, rows, rates ->
+            periodBalances(accounts, rows, rates, from, to)
+        }
+
     fun getIncomeSum(from: Long, to: Long): Flow<Double> =
-        transactionDao.getSumByTypeAndPeriod(TransactionType.INCOME, from, to)
+        getBaseTransactionsByPeriod(from, to).map { rows -> rows.filter { it.type == TransactionType.INCOME }.sumOf { it.amount } }
 
     fun getExpenseSum(from: Long, to: Long): Flow<Double> =
-        transactionDao.getSumByTypeAndPeriod(TransactionType.EXPENSE, from, to)
+        getBaseTransactionsByPeriod(from, to).map { rows -> rows.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount } }
 
     fun getCategorySpending(type: TransactionType, from: Long, to: Long): Flow<List<CategorySpending>> =
-        transactionDao.getCategorySpending(type, from, to)
+        getBaseTransactionsByPeriod(from, to).map { rows ->
+            rows.filter { it.type == type && it.categoryId != null }.groupBy { it.categoryId!! }.map { (id, group) ->
+                val first = group.first()
+                CategorySpending(id, first.categoryName.orEmpty(), first.categoryColor ?: "#9E9E9E",
+                    first.categoryIcon ?: "category", group.sumOf { it.amount }, group.size)
+            }.sortedByDescending { it.total }
+        }
 
-    suspend fun addTransaction(tx: TransactionEntity) {
+    suspend fun addTransaction(tx: TransactionEntity): Long {
         // Зачисляемую сумму считаем ДО вставки и кладём в саму операцию:
         // откат потом должен снять ровно столько же, сколько положили.
         val credited = if (tx.toAccountId != null) creditedAmount(tx) else tx.amount
         val stored   = if (tx.toAccountId != null) tx.copy(toAmount = credited) else tx
-        transactionDao.insertTransaction(stored)
+        val id = transactionDao.insertTransaction(stored)
         when (tx.type) {
             TransactionType.INCOME   -> accountDao.updateBalance(tx.accountId, +tx.amount)
             TransactionType.EXPENSE  -> accountDao.updateBalance(tx.accountId, -tx.amount)
@@ -92,6 +113,7 @@ class TransactionRepository @Inject constructor(
                 tx.toAccountId?.let { accountDao.updateBalance(it, +credited) }
             }
         }
+        return id
     }
 
     suspend fun deleteTransaction(tx: TransactionEntity) {

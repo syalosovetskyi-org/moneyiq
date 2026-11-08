@@ -64,6 +64,7 @@ class TxOverrideRepository @Inject constructor(
         type: TransactionType,
         toAccountId: Long? = null
     ) {
+        if (!org.syalosovetskyi.onemoney.BuildConfig.MONOFLOW_ENABLED) return // Play has no personal server queue.
         if (txId < SERVER_ID_THRESHOLD) {
             Log.i(TAG, "правка операції $txId не їде на сервер: операція локальна, сервер її не знає")
             return
@@ -86,6 +87,7 @@ class TxOverrideRepository @Inject constructor(
 
     /** Віддає всі непідтверджені правки. Мережеву помилку повідомляє, а не ковтає. */
     suspend fun pushPending(): PushResult = withContext(Dispatchers.IO) {
+        if (!org.syalosovetskyi.onemoney.BuildConfig.MONOFLOW_ENABLED) return@withContext PushResult(skipped = true)
         val pending = dao.getPending(MAX_ATTEMPTS)
         if (pending.isEmpty()) {
             val dead = dao.deadCount(MAX_ATTEMPTS)

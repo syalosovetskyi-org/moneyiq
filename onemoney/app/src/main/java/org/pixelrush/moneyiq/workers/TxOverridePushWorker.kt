@@ -31,6 +31,8 @@ class TxOverridePushWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
+        if (!org.syalosovetskyi.onemoney.BuildConfig.MONOFLOW_ENABLED) return Result.failure(workDataOf("error" to "disabled"))
+        if (!monoFlowConfigured(applicationContext)) return Result.failure(workDataOf("error" to "not_configured"))
         val repo = EntryPointAccessors
             .fromApplication(applicationContext, TxOverridePushEntryPoint::class.java)
             .txOverrideRepository()
@@ -38,7 +40,7 @@ class TxOverridePushWorker(
         val result = repo.pushPending()
         return when {
             // сервер не налаштований — це не успіх відправки, але і ретраїти нема сенсу
-            result.skipped              -> Result.success()
+            result.skipped              -> Result.failure(workDataOf("error" to "not_configured"))
             result.networkError         -> Result.retry()
             result.failed > 0           -> {
                 Log.w(TAG, "правок відхилено сервером: ${result.failed}; вони лишаються в черзі")
@@ -53,8 +55,10 @@ class TxOverridePushWorker(
         const val WORK_NAME = "monoflow_override_push"
 
         /** Разова відправка — після кожної правки операції. */
-        fun scheduleOneTime(context: Context) {
+        suspend fun scheduleOneTime(context: Context) {
+            if (!monoFlowConfigured(context)) return
             val request = OneTimeWorkRequestBuilder<TxOverridePushWorker>()
+                .addTag("monoflow")
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)

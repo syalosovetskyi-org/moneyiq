@@ -78,7 +78,11 @@ class TransactionsListViewModelTest {
                 tx(6L, TransactionType.TRANSFER, 400.0)
             )
         )
-        every { accountRepo.getTotalBalance() } returns flowOf(2_000.0)
+        every { txRepo.getBaseTransactionsByPeriod(any(), any()) } answers { txRepo.getTransactionsByPeriod(firstArg(), secondArg()) }
+        every { txRepo.getPeriodBalances(any(), any()) } returns flowOf(
+            org.syalosovetskyi.onemoney.util.PeriodBalances(
+                org.syalosovetskyi.onemoney.util.BaseValuation(1175.0),
+                org.syalosovetskyi.onemoney.util.BaseValuation(2000.0)))
         every { accountRepo.getAllAccounts() } returns flowOf(
             listOf(AccountEntity(id = 1L, name = "Гаманець"))
         )

@@ -107,6 +107,9 @@ interface TransactionDao {
     suspend fun getTransactionById(id: Long): TransactionEntity?
 
     @Query("SELECT * FROM transactions ORDER BY date DESC")
+    fun observeAllTransactions(): Flow<List<TransactionEntity>>
+
+    @Query("SELECT * FROM transactions ORDER BY date DESC")
     suspend fun getAllTransactions(): List<TransactionEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

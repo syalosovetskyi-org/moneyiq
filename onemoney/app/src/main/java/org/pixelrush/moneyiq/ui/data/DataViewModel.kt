@@ -282,6 +282,7 @@ class DataViewModel @Inject constructor(
     }
 
     fun saveMonoFlowConfig(context: Context, url: String, token: String) {
+        if (!org.syalosovetskyi.onemoney.BuildConfig.MONOFLOW_ENABLED) return // Flavor disables this integration.
         viewModelScope.launch {
             settingsRepo.update {
                 this[SettingsRepository.KEY_MONOFLOW_URL]       = url.trimEnd('/')
@@ -316,6 +317,10 @@ class DataViewModel @Inject constructor(
     }
 
     fun setMonoFlowAutoSync(context: Context, enabled: Boolean) {
+        if (!org.syalosovetskyi.onemoney.BuildConfig.MONOFLOW_ENABLED) return // Flavor disables this integration.
+        if (enabled && (!org.syalosovetskyi.onemoney.BuildConfig.MONOFLOW_ENABLED || _state.value.monoflowUrl.isBlank() || _state.value.monoflowToken.isBlank())) {
+            showMessage(context.getString(R.string.data_monoflow_configure)); return
+        }
         viewModelScope.launch {
             settingsRepo.update {
                 this[SettingsRepository.KEY_MONOFLOW_AUTO_SYNC] = enabled
@@ -327,6 +332,7 @@ class DataViewModel @Inject constructor(
     }
 
     fun syncFromMonoFlowNow(context: Context) {
+        if (!org.syalosovetskyi.onemoney.BuildConfig.MONOFLOW_ENABLED) return // Personal integration unavailable in Play.
         if (_state.value.isSyncing) return
         val url   = _state.value.monoflowUrl
         val token = _state.value.monoflowToken

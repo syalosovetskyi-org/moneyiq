@@ -5,6 +5,8 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.ListenableWorker
+import androidx.work.workDataOf
+import org.syalosovetskyi.onemoney.BuildConfig
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
 import dagger.hilt.internal.GeneratedComponentManager
@@ -68,7 +70,7 @@ class WorkerBehaviorTest {
 
     @Test fun sync_without_configuration_never_pushes_or_writes() = runTest {
         db.accountDao().insertAccount(AccountEntity(id = 1, name = "Preserve"))
-        assertEquals(ListenableWorker.Result.success(),
+        assertEquals(ListenableWorker.Result.failure(workDataOf("error" to if (BuildConfig.MONOFLOW_ENABLED) "not_configured" else "disabled")),
             TestListenableWorkerBuilder<MonoFlowSyncWorker>(app).build().doWork())
         assertEquals("Preserve", db.accountDao().getAccountById(1)!!.name)
         coVerify(exactly = 0) { overrides.pushPending() }
@@ -77,18 +79,19 @@ class WorkerBehaviorTest {
     @Test fun pending_edits_prevent_sync_network_and_retry() = runTest {
         every { settings.settings } returns flowOf(AppSettings(monoflowUrl = "http://127.0.0.1:1", monoflowToken = "test"))
         coEvery { overrides.pushPending() } returns TxOverrideRepository.PushResult(pendingLeft = 1)
-        assertEquals(ListenableWorker.Result.retry(),
+        assertEquals(if (BuildConfig.MONOFLOW_ENABLED) ListenableWorker.Result.retry() else ListenableWorker.Result.failure(workDataOf("error" to "disabled")),
             TestListenableWorkerBuilder<MonoFlowSyncWorker>(app).build().doWork())
     }
 
     @Test fun override_push_distinguishes_success_network_and_rejection() = runTest {
+        every { settings.settings } returns flowOf(AppSettings(monoflowUrl = "https://example.test", monoflowToken = "test"))
         for ((pushed, expected) in listOf(
-            TxOverrideRepository.PushResult(skipped = true) to ListenableWorker.Result.success(),
+            TxOverrideRepository.PushResult(skipped = true) to ListenableWorker.Result.failure(workDataOf("error" to "not_configured")),
             TxOverrideRepository.PushResult(sent = 2) to ListenableWorker.Result.success(),
             TxOverrideRepository.PushResult(networkError = true) to ListenableWorker.Result.retry(),
             TxOverrideRepository.PushResult(failed = 1) to ListenableWorker.Result.failure())) {
             coEvery { overrides.pushPending() } returns pushed
-            assertEquals(expected, TestListenableWorkerBuilder<TxOverridePushWorker>(app).build().doWork())
+            assertEquals(if (BuildConfig.MONOFLOW_ENABLED) expected else ListenableWorker.Result.failure(workDataOf("error" to "disabled")), TestListenableWorkerBuilder<TxOverridePushWorker>(app).build().doWork())
         }
     }
 
@@ -118,6 +121,22 @@ class WorkerBehaviorTest {
             .getWorkInfosForUniqueWork(NotificationWorker.WORK_NAME).get()
         assertEquals(1, scheduled.size)
         assertEquals(androidx.work.WorkInfo.State.ENQUEUED, scheduled.single().state)
+    }
+
+    @Test fun unconfigured_or_disabled_integration_schedules_neither_worker() = runTest {
+        MonoFlowSyncWorker.schedule(app)
+        MonoFlowSyncWorker.scheduleOneTime(app)
+        TxOverridePushWorker.scheduleOneTime(app)
+        val work = androidx.work.WorkManager.getInstance(app).getWorkInfosByTag("monoflow").get()
+        assertTrue(work.isEmpty())
+    }
+    @Test fun configured_integration_is_scheduled_only_in_personal() = runTest {
+        every { settings.settings } returns flowOf(AppSettings(monoflowUrl = "https://example.test", monoflowToken = "test"))
+        MonoFlowSyncWorker.schedule(app)
+        TxOverridePushWorker.scheduleOneTime(app)
+        val manager = androidx.work.WorkManager.getInstance(app)
+        assertEquals(if (BuildConfig.MONOFLOW_ENABLED) 1 else 0, manager.getWorkInfosForUniqueWork(MonoFlowSyncWorker.WORK_NAME).get().size)
+        assertEquals(if (BuildConfig.MONOFLOW_ENABLED) 1 else 0, manager.getWorkInfosForUniqueWork(TxOverridePushWorker.WORK_NAME).get().size)
     }
 
 }

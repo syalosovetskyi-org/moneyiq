@@ -26,7 +26,7 @@ private val Context.ratesDataStore by preferencesDataStore(name = "currency_rate
  * після першого завантаження конвертація працює й офлайн. Гривня завжди = 1.0.
  *
  * Валюти, яких немає у відповіді НБУ (напр. крипто), у мапі відсутні — виклик
- * трактує їх як внесок 0 у загальний підсумок.
+ * показує частковий підсумок із явним переліком відсутніх курсів.
  */
 @Singleton
 class CurrencyRatesRepository internal constructor(

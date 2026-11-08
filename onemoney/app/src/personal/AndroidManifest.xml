@@ -1,5 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <queries><package android:name="com.alisaphone" /></queries>
     <application>
         <meta-data android:name="io.sentry.auto-init" android:value="false" />
+        <service android:name=".alisaphone.AlisaphoneService" android:exported="true">
+            <intent-filter><action android:name="org.syalosovetskyi.onemoney.ALISAPHONE_API" /></intent-filter>
+        </service>
     </application>
 </manifest>

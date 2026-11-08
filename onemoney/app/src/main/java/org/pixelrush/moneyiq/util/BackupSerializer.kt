@@ -24,13 +24,14 @@ object BackupSerializer {
     /** Validate a complete replacement before touching live tables. */
     fun validate(data: BackupData) {
         require(data.version == BACKUP_VERSION) { "Unsupported backup version: ${data.version}" }
-        fun ids(values: List<Long>): Set<Long> {
-            require(values.all { it > 0 } && values.distinct().size == values.size) { "Invalid or duplicate IDs" }
+        fun ids(values: List<Long>, allowLocalApiIds: Boolean = false): Set<Long> {
+            require(values.all { it > 0 || (allowLocalApiIds && it < 0) } && values.distinct().size == values.size) { "Invalid or duplicate IDs" }
             return values.toSet()
         }
         val accounts = ids(data.accounts.map { it.id })
         val categories = ids(data.categories.map { it.id })
-        ids(data.transactions.map { it.id })
+        // Negative transaction IDs are reserved for personal API writes; zero is still invalid.
+        ids(data.transactions.map { it.id }, allowLocalApiIds = true)
         require(data.accounts.all { it.balance.isFinite() && it.creditLimit.isFinite() }) { "Invalid account amount" }
         require(data.categories.all { it.budgetAmount.isFinite() && it.budgetAmount >= 0 &&
             (it.parentId == null || it.parentId in categories) }) { "Invalid category" }

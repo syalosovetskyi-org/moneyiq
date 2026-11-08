@@ -32,6 +32,7 @@ data class TxListUiState(
     val daysInMonth:       Int                      = 31,
     val pillBadge:         String                   = "31",
     val transactions:      List<TransactionWithDetails> = emptyList(),
+    val baseTransactions: List<TransactionWithDetails> = emptyList(),
     val totalIncome:       Double                   = 0.0,
     val totalExpense:      Double                   = 0.0,
     val closingBalance:    Double                   = 0.0,
@@ -55,24 +56,26 @@ class TransactionsListViewModel @Inject constructor(
         val sel        = TxSelectedMonth(am.year, am.month)
         val (from, to) = monthRepo.computeRange(am)
         combine(
-            txRepo.getTransactionsByPeriod(from, to),
-            accountRepo.getTotalBalance(),
+            combine(txRepo.getTransactionsByPeriod(from, to), txRepo.getBaseTransactionsByPeriod(from, to)) { raw, base -> raw to base },
+            txRepo.getPeriodBalances(from, to),
             accountRepo.getAllAccounts(),
             categoryRepo.getAll()
-        ) { txList, rawBalance, accounts, categories ->
-            val balance = rawBalance ?: 0.0
-            val income  = txList.filter { it.type == TransactionType.INCOME || it.type == TransactionType.BORROW }.sumOf { it.amount }
-            val expense = txList.filter { it.type == TransactionType.EXPENSE || it.type == TransactionType.LEND || it.type == TransactionType.REPAY }.sumOf { it.amount }
+        ) { lists, rawBalance, accounts, categories ->
+            val (txList, baseList) = lists
+            val balance = rawBalance.closing.amount
+            val income  = baseList.filter { it.type == TransactionType.INCOME || it.type == TransactionType.BORROW }.sumOf { it.amount }
+            val expense = baseList.filter { it.type == TransactionType.EXPENSE || it.type == TransactionType.LEND || it.type == TransactionType.REPAY }.sumOf { it.amount }
             TxListUiState(
                 selectedMonth     = sel,
                 appMonth          = am,
                 daysInMonth       = monthRepo.daysInPeriod(am),
                 pillBadge         = monthRepo.pillBadge(am),
                 transactions      = txList,
+                baseTransactions  = baseList,
                 totalIncome       = income,
                 totalExpense      = expense,
                 closingBalance    = balance,
-                openingBalance    = balance - income + expense,
+                openingBalance    = rawBalance.opening.amount,
                 accounts          = accounts,
                 expenseCategories = categories.filter { it.type == TransactionType.EXPENSE && !it.archived },
                 incomeCategories  = categories.filter { it.type == TransactionType.INCOME && !it.archived }

@@ -14,11 +14,13 @@ sealed class Screen(val route: String) {
 }
 
 @Composable
-fun onemoneyNavGraph(navController: NavHostController = rememberNavController()) {
+fun onemoneyNavGraph(navController: NavHostController = rememberNavController(), requestedScreen: String? = null, screenRequestId: Long = 0L) {
     NavHost(navController = navController, startDestination = Screen.Main.route) {
 
         composable(Screen.Main.route) {
             MainScreen(
+                requestedScreen = requestedScreen,
+                screenRequestId = screenRequestId,
                 onAddTransaction = { navController.navigate(Screen.AddTx.route) }
             )
         }

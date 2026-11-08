@@ -40,6 +40,7 @@ class MonoFlowSyncWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        if (!org.syalosovetskyi.onemoney.BuildConfig.MONOFLOW_ENABLED) return@withContext Result.failure(workDataOf("error" to "disabled"))
         try {
             val ep = EntryPointAccessors.fromApplication(
                 applicationContext, MonoFlowSyncEntryPoint::class.java
@@ -49,7 +50,7 @@ class MonoFlowSyncWorker(
             // Якщо не налаштовано — нічого не робимо
             val url   = settings.monoflowUrl.trimEnd('/')
             val token = settings.monoflowToken
-            if (url.isBlank() || token.isBlank()) return@withContext Result.success()
+            if (url.isBlank() || token.isBlank()) return@withContext Result.failure(workDataOf("error" to "not_configured"))
 
             val since = settings.monoflowLastSyncMs
 
@@ -125,8 +126,10 @@ class MonoFlowSyncWorker(
         private const val TAG = "MonoFlowSync"
         const val WORK_NAME = "monoflow_auto_sync"
 
-        fun schedule(context: Context) {
+        suspend fun schedule(context: Context) {
+            if (!monoFlowConfigured(context)) { cancel(context); return }
             val request = PeriodicWorkRequestBuilder<MonoFlowSyncWorker>(2, TimeUnit.HOURS)
+                .addTag("monoflow")
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -142,8 +145,10 @@ class MonoFlowSyncWorker(
             )
         }
 
-        fun scheduleOneTime(context: Context) {
+        suspend fun scheduleOneTime(context: Context) {
+            if (!monoFlowConfigured(context)) return
             val request = OneTimeWorkRequestBuilder<MonoFlowSyncWorker>()
+                .addTag("monoflow")
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -155,6 +160,12 @@ class MonoFlowSyncWorker(
 
         fun cancel(context: Context) {
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+            val manager = WorkManager.getInstance(context)
+            manager.cancelUniqueWork(TxOverridePushWorker.WORK_NAME)
+            manager.cancelAllWorkByTag("monoflow")
+            // WorkRequest also tags its worker class; this cancels legacy untagged one-shots.
+            manager.cancelAllWorkByTag(MonoFlowSyncWorker::class.java.name)
+            manager.cancelAllWorkByTag(TxOverridePushWorker::class.java.name)
         }
     }
 }

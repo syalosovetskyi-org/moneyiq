@@ -88,8 +88,6 @@ android {
         buildConfig = true
     }
 
-    val debugMonoflowUrl   = localProps.getProperty("monoflow.url",   "")
-    val debugMonoflowToken = localProps.getProperty("monoflow.token", "")
     // Приёмник падений. В исходнике DSN не живёт: он задаётся в local.properties
     // (файл не под git) или переменной окружения GLITCHTIP_DSN в CI. Пусто —
     // отправка падений просто выключена, приложение работает как обычно.
@@ -100,23 +98,25 @@ android {
     productFlavors {
         create("personal") {
             dimension = "distribution"
+            buildConfigField("boolean", "MONOFLOW_ENABLED", "true")
+            val pins = (System.getenv("ALISAPHONE_CERT_SHA256") ?: localProps.getProperty("alisaphone.certSha256", "")).trim()
+            buildConfigField("String", "ALISAPHONE_CERT_SHA256", "\"${pins.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
+            buildConfigField("String", "DEBUG_MONOFLOW_URL", "\"\"")
+            buildConfigField("String", "DEBUG_MONOFLOW_TOKEN", "\"\"")
             buildConfigField("String", "GLITCHTIP_DSN", "\"${glitchtipDsn.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
         }
         create("play") {
             dimension = "distribution"
             applicationId = "ua.syalosovetskyi.zerno"
+            buildConfigField("boolean", "MONOFLOW_ENABLED", "false")
         }
     }
 
     buildTypes {
         debug {
             enableUnitTestCoverage = true
-            buildConfigField("String", "DEBUG_MONOFLOW_URL",   "\"$debugMonoflowUrl\"")
-            buildConfigField("String", "DEBUG_MONOFLOW_TOKEN", "\"$debugMonoflowToken\"")
         }
         release {
-            buildConfigField("String", "DEBUG_MONOFLOW_URL",   "\"\"")
-            buildConfigField("String", "DEBUG_MONOFLOW_TOKEN", "\"\"")
         }
     }
 
@@ -224,4 +224,16 @@ tasks.configureEach {
 
 tasks.register("printVersionName") {
     doLast { println(android.defaultConfig.versionName) }
+}
+
+// Flavor-owned fields: Play has no MonoFlow credentials; release never embeds local debug tokens.
+androidComponents {
+    onVariants(selector().withFlavor("distribution" to "personal").withBuildType("debug")) { variant ->
+        fun quoted(value: String) = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"")
+            .replace("\n", "\\n").replace("\r", "\\r") + "\""
+        variant.buildConfigFields.put("DEBUG_MONOFLOW_URL", com.android.build.api.variant.BuildConfigField(
+            "String", quoted(localProps.getProperty("monoflow.url", "")), "Personal debug URL"))
+        variant.buildConfigFields.put("DEBUG_MONOFLOW_TOKEN", com.android.build.api.variant.BuildConfigField(
+            "String", quoted(localProps.getProperty("monoflow.token", "")), "Personal debug token"))
+    }
 }

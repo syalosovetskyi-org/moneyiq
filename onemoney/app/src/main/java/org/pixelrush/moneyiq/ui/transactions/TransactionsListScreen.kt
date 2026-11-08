@@ -136,8 +136,8 @@ fun TransactionsListScreen(
     val totalsByCurrency = org.syalosovetskyi.onemoney.util.currencyTotals(filteredTransactions)
 
     // ── Витрати за категоріями (для пікера) ───────────────────────────────
-    val categorySpending = remember(state.transactions) {
-        state.transactions.groupBy { it.categoryId }
+    val categorySpending = remember(state.baseTransactions) {
+        state.baseTransactions.groupBy { it.categoryId }
             .mapValues { (_, txList) -> txList.sumOf { it.amount } }
     }
 

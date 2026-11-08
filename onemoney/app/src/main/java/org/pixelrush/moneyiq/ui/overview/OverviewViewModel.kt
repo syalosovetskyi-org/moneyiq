@@ -92,7 +92,7 @@ class OverviewViewModel @Inject constructor(
             val (from, to) = monthRepo.computeRange(am)
 
             val innerFlow = combine(
-                txRepo.getTransactionsByPeriod(from, to),
+                txRepo.getBaseTransactionsByPeriod(from, to),
                 txRepo.getCategorySpending(TransactionType.EXPENSE, from, to),
                 txRepo.getCategorySpending(TransactionType.INCOME,  from, to),
                 categoryRepo.getByType(TransactionType.EXPENSE),

@@ -2,6 +2,8 @@ package org.syalosovetskyi.onemoney.data.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import org.syalosovetskyi.onemoney.util.accountValuation
 import org.syalosovetskyi.onemoney.data.db.dao.AccountDao
 import org.syalosovetskyi.onemoney.data.db.entities.AccountEntity
 import javax.inject.Inject
@@ -15,17 +17,12 @@ class AccountRepository @Inject constructor(
 
     fun getAllAccounts(): Flow<List<AccountEntity>> = dao.getAllAccounts()
 
-    /**
-     * Загальний баланс усіх рахунків, приведений до гривні за курсами НБУ.
-     * Раніше рахувалося як сирий SUM(balance) — валюти складалися без конвертації.
-     * Рахунки у валюті без відомого курсу (напр. крипто) дають внесок 0.
-     */
-    fun getTotalBalance(): Flow<Double?> =
-        combine(dao.getAllAccounts(), ratesRepo.rates) { accounts, rates ->
-            accounts
-                .filter { it.includeInTotal }
-                .sumOf { it.balance * (rates[it.currency] ?: if (it.currency == "UAH") 1.0 else 0.0) }
-        }
+    /** Partial totals always travel with an explicit missing-rate status. */
+    fun getValuation() = combine(dao.getAllAccounts(), ratesRepo.rates) { accounts, rates ->
+        accountValuation(accounts, rates)
+    }
+
+    fun getTotalBalance(): Flow<Double?> = getValuation().map { it.amount }
 
     suspend fun getById(id: Long): AccountEntity? = dao.getAccountById(id)
 

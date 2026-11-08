@@ -89,7 +89,7 @@ class OverviewViewModelTest {
 
     @Test
     fun `transactions remain in state when category rows are empty`() = runTest {
-        every { txRepo.getTransactionsByPeriod(any(), any()) } returns flowOf(
+        every { txRepo.getBaseTransactionsByPeriod(any(), any()) } returns flowOf(
             listOf(tx(1L, TransactionType.EXPENSE, 120.0, 3, null, null, null, null))
         )
 
@@ -106,7 +106,7 @@ class OverviewViewModelTest {
 
     @Test
     fun `expense day bars contain category color segments sorted largest first`() = runTest {
-        every { txRepo.getTransactionsByPeriod(any(), any()) } returns flowOf(
+        every { txRepo.getBaseTransactionsByPeriod(any(), any()) } returns flowOf(
             listOf(
                 tx(1L, TransactionType.EXPENSE, 40.0, 5, 1L, "Продукти", "#4AAFE8", "grocery"),
                 tx(2L, TransactionType.EXPENSE, 90.0, 5, 2L, "Таксі", "#FDD835", "taxi"),
@@ -127,7 +127,7 @@ class OverviewViewModelTest {
 
     @Test
     fun `income mode filters transactions and category rows to income`() = runTest {
-        every { txRepo.getTransactionsByPeriod(any(), any()) } returns flowOf(
+        every { txRepo.getBaseTransactionsByPeriod(any(), any()) } returns flowOf(
             listOf(
                 tx(1L, TransactionType.EXPENSE, 100.0, 2, 1L, "Продукти", "#4AAFE8", "grocery"),
                 tx(2L, TransactionType.INCOME, 1_000.0, 2, 10L, "Зарплата", "#4CAF50", "work")

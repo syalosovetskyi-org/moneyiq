@@ -70,7 +70,7 @@ internal fun MonoFlowSyncCard(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    if (isConfigured) stringResource(R.string.data_monoflow_connected) else stringResource(R.string.data_monoflow_connect),
+                    if (isConfigured) stringResource(R.string.data_monoflow_connected) else stringResource(R.string.data_monoflow_not_configured),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)

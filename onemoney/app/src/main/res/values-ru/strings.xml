@@ -424,4 +424,7 @@
     <string name="tx_convert_move_confirm">Переместить</string>
     <string name="budget_delete_confirm_title">Удалить бюджет?</string>
     <string name="budget_delete_confirm_message">Все запланированные суммы будут очищены. Операции останутся.</string>
+    <string name="default_account_name">Кошелёк</string>
+    <string name="missing_currency_rates">Неполный итог: нет курса %1$s. Суммы приведены в UAH.</string>
+    <string name="data_monoflow_not_configured">Не настроено</string>
 </resources>

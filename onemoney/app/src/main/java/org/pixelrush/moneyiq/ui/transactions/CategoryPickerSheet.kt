@@ -98,7 +98,7 @@ internal fun CategoryPickerSheet(
                 HorizontalDivider()
 
                 if (currentType == TransactionType.TRANSFER) {
-                    val totalBal = accounts.filter { it.includeInTotal }.sumOf { it.balance }
+                    val totals = org.syalosovetskyi.onemoney.util.accountCurrencyTotals(accounts)
                     Column(modifier = Modifier.fillMaxSize()) {
                         Row(
                             modifier              = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -107,9 +107,9 @@ internal fun CategoryPickerSheet(
                         ) {
                             Text(stringResource(R.string.tx_accounts), style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
-                            Text("${formatMoney(totalBal)} ₴", style = MaterialTheme.typography.titleMedium,
+                            Text(totals.entries.joinToString(" · ") { (currency, total) -> "${formatMoney(total.net)} $currency" }, style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = if (totalBal < 0) NegativeAmountColor else MaterialTheme.colorScheme.onSurface)
+                                color = if (totals.values.any { it.net < 0 }) NegativeAmountColor else MaterialTheme.colorScheme.onSurface)
                         }
                         accounts.forEach { acc -> AccountPickerRow(account = acc, onClick = { onTransfer(acc) }) }
                     }
@@ -161,7 +161,7 @@ internal fun CategoryPickerSheet(
                 }
 
                 if (tabType == null) {
-                    val totalBal = accounts.filter { it.includeInTotal }.sumOf { it.balance }
+                    val totals = org.syalosovetskyi.onemoney.util.accountCurrencyTotals(accounts)
                     Column(modifier = Modifier.fillMaxSize()) {
                         Row(
                             modifier              = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -170,9 +170,9 @@ internal fun CategoryPickerSheet(
                         ) {
                             Text(stringResource(R.string.tx_accounts), style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
-                            Text("${formatMoney(totalBal)} ₴", style = MaterialTheme.typography.titleMedium,
+                            Text(totals.entries.joinToString(" · ") { (currency, total) -> "${formatMoney(total.net)} $currency" }, style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = if (totalBal < 0) NegativeAmountColor else MaterialTheme.colorScheme.onSurface)
+                                color = if (totals.values.any { it.net < 0 }) NegativeAmountColor else MaterialTheme.colorScheme.onSurface)
                         }
                         accounts.forEach { acc -> AccountPickerRow(acc) { onTransfer(acc) } }
                     }

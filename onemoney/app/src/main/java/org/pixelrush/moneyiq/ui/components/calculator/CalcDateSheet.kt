@@ -395,7 +395,7 @@ fun AccountPickerSheet(
             ) {
                 Text(stringResource(R.string.nav_accounts), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 Text(
-                    "${formatMoney(accounts.sumOf { it.balance })} ₴",
+                    org.syalosovetskyi.onemoney.util.accountCurrencyTotals(accounts).entries.joinToString(" · ") { (currency, total) -> "${formatMoney(total.net)} $currency" },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )

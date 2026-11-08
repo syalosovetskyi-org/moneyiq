@@ -598,7 +598,7 @@ private fun SavingsSectionCard(
     val actualSavings = if (incomeBudget > 0) incomeBudget - expenseTotal else realSavings
 
     // Прогноз витрат на кінець місяця (лінійна екстраполяція по днях)
-    val hasForecast = daysPassed > 0 && daysInMonth > daysPassed && expenseTotal > 0
+    val hasForecast = org.syalosovetskyi.onemoney.util.canForecast(incomeBudget, incomeTotal, expenseTotal, daysPassed, daysInMonth)
     val projectedExpenses = if (hasForecast) expenseTotal / daysPassed * daysInMonth else expenseTotal
     val projectedSavings  = if (incomeBudget > 0) incomeBudget - projectedExpenses
                             else realSavings - (projectedExpenses - expenseTotal)

@@ -1599,3 +1599,41 @@ No schema change: Room remains v34; no new columns, tables or migration required
 Validation: independent SQL/XML/contrast checks pass. Kotlin compilation, Room,
 Compose and Worker tests have not run due to environment restrictions; see
 `zerno-2673-report.md`. This entry records implementation intent, not acceptance.
+
+## ADR-077: Валютні підсумки, personal mono-flow і локальний API Alisaphone (2026-11-08, #2673)
+
+Міжрахункові звіти залишаються у UAH, як їх чинні підписи. Кеш НБУ має rate = UAH
+за одиницю валюти. `BaseValuation` не підміняє невідомий курс нульовим успіхом:
+частковий підсумок супроводжується missingCurrencies. `TransactionRepository`
+конвертує операції **до** агрегації категорій, доходів, витрат і графіків; оригінальні
+суми для редагування залишаються у валюті рахунку. Загальне попередження оболонки
+перелічує валюти без курсу. Пікери/віджет без власного джерела курсів показують
+окремі валютні підсумки. Баланси на межах періоду відновлюються від поточного
+залишку з відкатом операцій після межі, включно зі збереженим toAmount переказу.
+Прогноз за темпом витрат відсутній без фактичного або бюджетного доходу.
+Початковий рахунок отримує локалізоване ім'я з ресурсів і UAH; існуючі дані не мігрують.
+
+`BuildConfig.MONOFLOW_ENABLED` — true лише personal. Play не показує MonoFlow UI,
+не планує/не виконує його воркери і не накопичує серверні override. DEBUG_MONOFLOW_*
+існують лише в personal; їх значення заповнюються тільки для personalDebug через
+variant API, personalRelease має порожні значення. Default credentials належать
+flavor source set. Порожня конфігурація → видиме «Не налаштовано», worker failure
+з error=not_configured при застарілому запуску. Застосунок узгоджує планування
+з конфігурацією та autoSync; відключення скасовує також tagged one-shot роботу.
+Явно збережені порожні поля більше не підміняються debug defaults.
+
+Alisaphone API — exported Messenger bound service лише в src/personal і personal
+manifest. Довіра перевіряється для **кожного Message** за sendingUid, allowlist
+пакета com.alisaphone та SHA-256 поточних сертифікатів з personal BuildConfig.
+Відсутні піни закривають доступ з caller_not_configured. Жодного debug bypass.
+Команди й помилки описані в ALISAPHONE_API.md; доступу до мережі команди не потребують.
+Записи й undo використовують TransactionRepository у Room withTransaction.
+Для ownership резервуються випадкові від'ємні transaction ID; Room підтримує їх,
+backup validation дозволяє ненульові signed transaction ID, позитивні ID рахунків
+і категорій залишаються обов'язковими. Це не змінює таблиці: схема залишається v34.
+Приватний durable undo-покажчик зберігає ID і fingerprint; змінену операцію сервіс
+не видаляє. SharedPreferences та Room не мають спільного commit: при аварії undo
+може стати недоступним, але перевірка ownership закриває доступ до інших операцій.
+
+Тести написані, але Gradle/компіляція/пристрій у цій сесії не запускались за умовою
+задачі. Статичні перевірки не є доказом проходження JVM або Android тестів.

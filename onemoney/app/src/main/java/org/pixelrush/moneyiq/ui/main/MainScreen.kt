@@ -90,10 +90,14 @@ fun MainScreen(
     mainViewModel:       MainViewModel      = hiltViewModel(),
     accountsViewModel:   AccountsViewModel  = hiltViewModel(),
     categoriesViewModel: CategoriesViewModel = hiltViewModel(),
-    settingsViewModel:   SettingsViewModel  = hiltViewModel()
+    settingsViewModel:   SettingsViewModel  = hiltViewModel(),
+    currencyStatus: CurrencyStatusViewModel = hiltViewModel(),
+    requestedScreen: String? = null,
+    screenRequestId: Long = 0L
 ) {
+    val missingRates by currencyStatus.missing.collectAsState()
     val settings       by settingsViewModel.settings.collectAsState()
-    val budgetVisible   = settings.budgetVisible
+    val budgetVisible   = settings.budgetVisible || requestedScreen == "budget"
     val initialPage     = settings.homeScreen.index
 
     val activeTabs = if (budgetVisible) TABS else TABS.filterIndexed { i, _ -> i != 3 }
@@ -103,6 +107,14 @@ fun MainScreen(
     else initialPage.coerceIn(0, activeTabs.lastIndex)
     val pagerState  = rememberPagerState(initialPage = safeInitial,
                                         pageCount    = { activeTabs.size })
+    LaunchedEffect(requestedScreen, screenRequestId) {
+        val index = listOf("accounts", "categories", "operations", "budget", "overview").indexOf(requestedScreen)
+        if (index >= 0) {
+            val target = TABS[index]
+            val page = activeTabs.indexOf(target)
+            if (page >= 0) pagerState.scrollToPage(page)
+        }
+    }
     val scope       = rememberCoroutineScope()
     val currentPage = pagerState.currentPage
     val mainState  by mainViewModel.state.collectAsState()
@@ -231,6 +243,11 @@ fun MainScreen(
                 onBudgetSettings    = { showBudgetSettings = true }
             )
 
+            if (missingRates.isNotEmpty()) {
+                Text(stringResource(R.string.missing_currency_rates, missingRates.joinToString(", ")),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = Spacing.lg))
+            }
             HorizontalPager(
                 state             = pagerState,
                 modifier          = Modifier.weight(1f),

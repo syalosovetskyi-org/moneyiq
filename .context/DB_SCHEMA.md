@@ -145,3 +145,12 @@ AccountDao and CategoryDao use `@Upsert` for single and bulk insert-or-update.
 This preserves transaction foreign keys during sync and saves. The schema remains
 v34; no tables or columns changed. SQLite REPLACE would delete parent rows and
 trigger CASCADE/SET NULL before reinserting them.
+
+## Personal API transaction identity (2026-11-08, #2673)
+
+Schema remains v34. Personal Alisaphone API reserves random **negative nonzero**
+transaction IDs; ordinary auto-generated and server IDs remain positive. Room's
+INTEGER primary key supports this without migration. JSON validation accepts signed
+nonzero transaction IDs, while account/category IDs must remain positive. API undo
+ownership lives in private SharedPreferences (ID + original fingerprint), not in the
+financial schema or portable JSON backup. A negative ID alone never authorizes undo.

@@ -47,16 +47,16 @@ class BalanceWidget : GlanceAppWidget() {
             .build()
 
         val (from, to) = monthRange()
-        val income  = db.transactionDao().getSumByTypeAndPeriod(TransactionType.INCOME, from, to).first()
-        val expense = db.transactionDao().getSumByTypeAndPeriod(TransactionType.EXPENSE, from, to).first()
-
+        val totals = try {
+            org.syalosovetskyi.onemoney.util.currencyTotals(db.transactionDao().getTransactionsByDateRange(from, to).first())
+        } finally { db.close() }
         provideContent {
-            Content(context, income, expense)
+            Content(context, totals)
         }
     }
 
     @Composable
-    private fun Content(context: Context, income: Double, expense: Double) {
+    private fun Content(context: Context, totals: Map<String, org.syalosovetskyi.onemoney.util.CurrencyTotal>) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
@@ -88,7 +88,7 @@ class BalanceWidget : GlanceAppWidget() {
                     )
                 )
                 Text(
-                    text = fmt(income),
+                    text = totals.entries.joinToString(" · ") { (currency, total) -> "${fmt(total.income)} $currency" }.ifEmpty { "0 UAH" },
                     style = TextStyle(
                         color = ColorProvider(Color(0xFFA5D6A7)),
                         fontSize = 16.sp,
@@ -118,7 +118,7 @@ class BalanceWidget : GlanceAppWidget() {
                     )
                 )
                 Text(
-                    text = fmt(expense),
+                    text = totals.entries.joinToString(" · ") { (currency, total) -> "${fmt(total.expense)} $currency" }.ifEmpty { "0 UAH" },
                     style = TextStyle(
                         color = ColorProvider(Color(0xFFEF9A9A)),
                         fontSize = 16.sp,

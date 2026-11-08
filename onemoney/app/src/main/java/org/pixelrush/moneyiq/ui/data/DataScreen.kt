@@ -363,6 +363,7 @@ fun DataScreen(
             }
 
             // ── MonoFlow синхронізація ─────────────────────────────────────────
+            if (org.syalosovetskyi.onemoney.BuildConfig.MONOFLOW_ENABLED) {
             item { DataSectionHeader(stringResource(R.string.data_section_monoflow)) }
             item {
                 MonoFlowSyncCard(
@@ -371,6 +372,8 @@ fun DataScreen(
                     viewModel   = viewModel
                 )
                 HorizontalDivider()
+            }
+
             }
 
             // ── Локальний бекап ────────────────────────────────────────────────
