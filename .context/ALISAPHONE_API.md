@@ -17,7 +17,7 @@ API існує тільки у `personal`; у manifest `play` сервіс ві�
 - SHA-256 — від DER-байтів `Signature.toByteArray()`. На API 28+ перевіряються
   `SigningInfo.apkContentsSigners`, на API 26–27 — `GET_SIGNATURES`.
 - `BuildConfig.ALISAPHONE_CERT_SHA256` є тільки у personal. Джерело:
-  env `ALISAPHONE_CERT_SHA256`, інакше `local.properties`: `alisaphone.certSha256`.
+  env `ALISAPHONE_CERT_SHA256`, інакше `local.properties`: `alisaphone.certSha256`. За замовчуванням закріплено сертифікат CI Alisaphone `F7B9EBF6…F3F69C83` (build.gradle.kts).
   Значення: один або декілька 64-символьних SHA-256 hex через кому; регістр і двокрапки
   неважливі. Значення має містити хоча б один валідний відбиток, інакше всі команди
   отримують `caller_not_configured`. Піни перевіряються і в debug, обхід відсутній.

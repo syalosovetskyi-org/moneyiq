@@ -99,7 +99,11 @@ android {
         create("personal") {
             dimension = "distribution"
             buildConfigField("boolean", "MONOFLOW_ENABLED", "true")
-            val pins = (System.getenv("ALISAPHONE_CERT_SHA256") ?: localProps.getProperty("alisaphone.certSha256", "")).trim()
+            // Відбиток сертифіката, яким CI підписує Alisaphone (com.alisaphone). Публічне значення,
+            // не секрет; перевизначається env ALISAPHONE_CERT_SHA256 або local.properties.
+            val alisaphoneCiCert = "F7B9EBF60E8BC55AE4A4D92B91A71AEDA76920EE78F25255C8C68DB9F3F69C83"
+            val pins = (System.getenv("ALISAPHONE_CERT_SHA256")
+                ?: localProps.getProperty("alisaphone.certSha256", alisaphoneCiCert)).trim()
             buildConfigField("String", "ALISAPHONE_CERT_SHA256", "\"${pins.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
             buildConfigField("String", "DEBUG_MONOFLOW_URL", "\"\"")
             buildConfigField("String", "DEBUG_MONOFLOW_TOKEN", "\"\"")
