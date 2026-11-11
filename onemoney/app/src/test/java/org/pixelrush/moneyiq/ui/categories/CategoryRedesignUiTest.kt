@@ -87,10 +87,10 @@ class CategoryRedesignUiTest {
                 }
             } }
         }
-        compose.onNodeWithText("Додати витрату").assertExists()
+        compose.onNodeWithText("Додати витрату", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("quick_add_transaction").assertIsDisplayed().performClick()
         compose.onNodeWithText("Доходи").performClick()
-        compose.onNodeWithText("Додати дохід").assertExists()
+        compose.onNodeWithText("Додати дохід", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("quick_add_transaction").performClick()
         compose.onNodeWithTag("quick_add_transaction").assertHeightIsEqualTo(56.dp)
         compose.runOnIdle { assertEquals(2, clicks); assertEquals(1, tab) }
