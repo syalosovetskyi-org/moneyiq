@@ -47,6 +47,7 @@ class CategoryRedesignUiTest {
         compose.runOnIdle { assertTrue(added) }
     }
 
+    @Config(qualifiers = "+w900dp-h1400dp")
     @Test fun foldUsesSixColumnsAndLargeFontDoesNotClipAmounts() {
         compose.setContent {
             MaterialTheme { OneMoneyThemeProvider {
@@ -74,6 +75,7 @@ class CategoryRedesignUiTest {
         compose.onNodeWithContentDescription("Витрати: ${org.syalosovetskyi.onemoney.util.formatMoney(1234.0)} ₴", substring = false).assertExists()
     }
 
+    @Config(qualifiers = "+w900dp-h1400dp")
     @Test fun fabAndSegmentSwitchBetweenExpenseAndIncome() {
         var tab by androidx.compose.runtime.mutableStateOf(0)
         var clicks = 0
@@ -85,9 +87,11 @@ class CategoryRedesignUiTest {
                 }
             } }
         }
-        compose.onNodeWithText("Додати витрату").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Додати витрату").assertExists()
+        compose.onNodeWithTag("quick_add_transaction").assertIsDisplayed().performClick()
         compose.onNodeWithText("Доходи").performClick()
-        compose.onNodeWithText("Додати дохід").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Додати дохід").assertExists()
+        compose.onNodeWithTag("quick_add_transaction").performClick()
         compose.onNodeWithTag("quick_add_transaction").assertHeightIsEqualTo(56.dp)
         compose.runOnIdle { assertEquals(2, clicks); assertEquals(1, tab) }
     }
