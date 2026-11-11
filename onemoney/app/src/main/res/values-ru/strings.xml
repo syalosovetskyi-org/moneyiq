@@ -427,4 +427,8 @@
     <string name="default_account_name">Кошелёк</string>
     <string name="missing_currency_rates">Неполный итог: нет курса %1$s. Суммы приведены в UAH.</string>
     <string name="data_monoflow_not_configured">Не настроено</string>
+    <string name="categories_new">Новая категория</string>
+    <string name="categories_add_expense">Добавить расход</string>
+    <string name="categories_add_income">Добавить доход</string>
+    <string name="categories_empty_period">В этом периоде операций ещё нет. Добавьте первую кнопкой внизу.</string>
 </resources>

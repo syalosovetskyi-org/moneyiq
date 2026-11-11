@@ -215,7 +215,7 @@ fun SharedMonthNavPill(
                     Text(
                         label,
                         style      = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = 11.sp, letterSpacing = 0.sp),
+                            fontSize = 12.sp, letterSpacing = 0.sp),
                         fontWeight = FontWeight.Light,
                         color      = pillColor
                     )

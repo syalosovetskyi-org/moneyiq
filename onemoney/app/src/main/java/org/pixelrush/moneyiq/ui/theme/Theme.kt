@@ -1,4 +1,4 @@
-﻿package org.syalosovetskyi.onemoney.ui.theme
+package org.syalosovetskyi.onemoney.ui.theme
 
 import android.app.Activity
 import android.os.Build
@@ -14,12 +14,12 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 // ── Semantic colors ──────────────────────────────────────────────────────────
-val IncomeGreen      = Color(0xFF1B6B3A)
-val ExpenseRed       = Color(0xFFB3261E)
-val TransferBlue     = Color(0xFF1F5FA6)
+val IncomeGreen      = Color(0xFF0F7447)
+val ExpenseRed       = Color(0xFFB81F3B)
+val TransferBlue     = Color(0xFF1F63B0)
 val DebtOrange       = Color(0xFF8A3FA0)
-val BudgetExpenseColor = Color(0xFFB3261E)
-val BudgetIncomeColor  = Color(0xFF1B6B3A)
+val BudgetExpenseColor = Color(0xFFB81F3B)
+val BudgetIncomeColor  = Color(0xFF0F7447)
 
 // ── Fallback / utility colors (централизованы; раньше дублировались локальными
 //    private val по экранам, местами рассинхронизированные) ─────────────────────
@@ -39,21 +39,21 @@ val AccentBlueGrey    = Color(0xFF607D8B)  // нейтральный фильт�
 // ── Category screen colour tokens ─────────────────────────────────────────────
 val MonthRed                  = Color(0xFFD7261E)
 val MonthRedLight             = Color(0xFFF8D9D5)
-val ExpensePink               = Color(0xFFB3261E)
-val IncomeTeal                = Color(0xFF1B6B3A)
-val CenterRingColor           = Color(0xFFD3D0D6)
+val ExpensePink               = Color(0xFFB81F3B)
+val IncomeTeal                = Color(0xFF0F7447)
+val CenterRingColor           = Color(0xFFD5D9DF)
 val BottomNavBg               = Color(0xFFFFFFFF)
-val BottomNavActivePill       = Color(0xFFE7E7F2)
-val SecondaryIconColor        = Color(0xFF373941)
-val CategoryTopAmountColor    = Color(0xFFC1C1C1)
-val CategoryBottomAmountColor = Color(0xFFACACAC)
+val BottomNavActivePill       = Color(0xFFFBE9DA)
+val SecondaryIconColor        = Color(0xFF565C66)
+val CategoryTopAmountColor    = Color(0xFF565C66)
+val CategoryBottomAmountColor = Color(0xFF565C66)
 
 // ── Zerno colour palette (Material 3) ───────────────────────────────────────
 // Light
-private val md_light_primary             = Color(0xFF7C581C)
+private val md_light_primary             = Color(0xFFA9500C)
 private val md_light_onPrimary           = Color(0xFFFFFFFF)
-private val md_light_primaryContainer    = Color(0xFFFFDDB1)
-private val md_light_onPrimaryContainer  = Color(0xFF291800)
+private val md_light_primaryContainer    = Color(0xFFFBE9DA)
+private val md_light_onPrimaryContainer  = Color(0xFF16181C)
 private val md_light_secondary           = Color(0xFF6F5B40)
 private val md_light_onSecondary         = Color(0xFFFFFFFF)
 private val md_light_secondaryContainer  = Color(0xFFDEE1F9)
@@ -66,20 +66,20 @@ private val md_light_error              = Color(0xFFBA1A1A)
 private val md_light_onError            = Color(0xFFFFFFFF)
 private val md_light_errorContainer     = Color(0xFFFFDAD6)
 private val md_light_onErrorContainer   = Color(0xFF410002)
-private val md_light_background         = Color(0xFFFFF8F4)
-private val md_light_onBackground       = Color(0xFF201B15)
-private val md_light_surface            = Color(0xFFFFF8F4)
-private val md_light_onSurface          = Color(0xFF201B15)
-private val md_light_surfaceVariant     = Color(0xFFF0EFF6)
-private val md_light_onSurfaceVariant   = Color(0xFF4F4538)
-private val md_light_outline            = Color(0xFF817566)
-private val md_light_outlineVariant     = Color(0xFFD8D7E3)
+private val md_light_background         = Color(0xFFF6F7F8)
+private val md_light_onBackground       = Color(0xFF16181C)
+private val md_light_surface            = Color(0xFFFFFFFF)
+private val md_light_onSurface          = Color(0xFF16181C)
+private val md_light_surfaceVariant     = Color(0xFFEDEFF2)
+private val md_light_onSurfaceVariant   = Color(0xFF565C66)
+private val md_light_outline            = Color(0xFF848B95)
+private val md_light_outlineVariant     = Color(0xFFD5D9DF)
 
 // Dark
-private val md_dark_primary             = Color(0xFFEFBE79)
-private val md_dark_onPrimary           = Color(0xFF442B00)
-private val md_dark_primaryContainer    = Color(0xFF614004)
-private val md_dark_onPrimaryContainer  = Color(0xFFFFDDB1)
+private val md_dark_primary             = Color(0xFFE8833A)
+private val md_dark_onPrimary           = Color(0xFF14161A)
+private val md_dark_primaryContainer    = Color(0xFF3A2A1E)
+private val md_dark_onPrimaryContainer  = Color(0xFFE6E8EB)
 private val md_dark_secondary           = Color(0xFFDDC3A1)
 private val md_dark_onSecondary         = Color(0xFF2C2F42)
 private val md_dark_secondaryContainer  = Color(0xFF414459)
@@ -92,14 +92,14 @@ private val md_dark_error              = Color(0xFFFFB4AB)
 private val md_dark_onError            = Color(0xFF690005)
 private val md_dark_errorContainer     = Color(0xFF93000A)
 private val md_dark_onErrorContainer   = Color(0xFFFFDAD6)
-private val md_dark_background         = Color(0xFF17130D)
-private val md_dark_onBackground       = Color(0xFFEBE1D6)
-private val md_dark_surface            = Color(0xFF17130D)
-private val md_dark_onSurface          = Color(0xFFEBE1D6)
-private val md_dark_surfaceVariant     = Color(0xFF45464F)
-private val md_dark_onSurfaceVariant   = Color(0xFFD3C4B3)
-private val md_dark_outline            = Color(0xFF9C8F7F)
-private val md_dark_outlineVariant     = Color(0xFF45464F)
+private val md_dark_background         = Color(0xFF14161A)
+private val md_dark_onBackground       = Color(0xFFE6E8EB)
+private val md_dark_surface            = Color(0xFF1C1F24)
+private val md_dark_onSurface          = Color(0xFFE6E8EB)
+private val md_dark_surfaceVariant     = Color(0xFF252930)
+private val md_dark_onSurfaceVariant   = Color(0xFFA3A9B2)
+private val md_dark_outline            = Color(0xFF6B737F)
+private val md_dark_outlineVariant     = Color(0xFF2F343C)
 
 private val LightColors = lightColorScheme(
     primary             = md_light_primary,
@@ -126,6 +126,13 @@ private val LightColors = lightColorScheme(
     onSurfaceVariant    = md_light_onSurfaceVariant,
     outline             = md_light_outline,
     outlineVariant      = md_light_outlineVariant,
+    surfaceDim = md_light_background,
+    surfaceBright = md_light_surface,
+    surfaceContainerLowest = md_light_surface,
+    surfaceContainerLow = md_light_background,
+    surfaceContainer = md_light_surface,
+    surfaceContainerHigh = md_light_surfaceVariant,
+    surfaceContainerHighest = md_light_surfaceVariant,
 )
 
 private val DarkColors = darkColorScheme(
@@ -153,14 +160,14 @@ private val DarkColors = darkColorScheme(
     onSurfaceVariant    = md_dark_onSurfaceVariant,
     outline             = md_dark_outline,
     outlineVariant      = md_dark_outlineVariant,
-    // ── M3 surface-container elevation ladder (dark tonal palette, seed #B07A1A) ──
-    surfaceDim             = Color(0xFF121318),
-    surfaceBright          = Color(0xFF38393F),
-    surfaceContainerLowest = Color(0xFF0D0E13),
-    surfaceContainerLow    = Color(0xFF1B1C22),
-    surfaceContainer       = Color(0xFF1F2026),
-    surfaceContainerHigh   = Color(0xFF292A31),
-    surfaceContainerHighest= Color(0xFF34353C),
+    // Reference neutral surface ladder.
+    surfaceDim             = md_dark_background,
+    surfaceBright          = md_dark_surfaceVariant,
+    surfaceContainerLowest = md_dark_background,
+    surfaceContainerLow    = md_dark_surface,
+    surfaceContainer       = md_dark_surface,
+    surfaceContainerHigh   = md_dark_surfaceVariant,
+    surfaceContainerHighest= md_dark_surfaceVariant,
     inverseSurface         = Color(0xFFE3E1EA),
     inverseOnSurface       = Color(0xFF2F3038),
     inversePrimary         = Color(0xFF7C581C),

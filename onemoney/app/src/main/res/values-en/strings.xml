@@ -421,4 +421,8 @@
     <string name="default_account_name">Wallet</string>
     <string name="missing_currency_rates">Partial total: no rate for %1$s. Summaries are in UAH.</string>
     <string name="data_monoflow_not_configured">Not configured</string>
+    <string name="categories_new">New category</string>
+    <string name="categories_add_expense">Add expense</string>
+    <string name="categories_add_income">Add income</string>
+    <string name="categories_empty_period">No transactions in this period. Add the first using the button below.</string>
 </resources>

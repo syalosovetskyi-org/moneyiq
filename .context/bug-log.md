@@ -62,3 +62,20 @@ Verification to run outside this environment:
 | Forecast displayed without income/budget | hasForecast checked only elapsed days and spending | BudgetScreen.kt + canForecast: require income or income budget | PersonalCurrencyRegressionTest bug 6 |
 | Play exposed personal sync; unconfigured worker succeeded | Credentials/worker/UI gates belonged to shared debug configuration | Flavor BuildConfig/defaults, MonoFlowPolicy, workers, app schedule reconciliation, Data UI: personal only, explicit not_configured failure | Both MonoFlowFlavorTest variants, WorkerBehaviorTest |
 | API add/undo must not mutate manual rows or partially update balances | New local command boundary needs caller trust and durable ownership | personal/alisaphone service/verifier/commands, personal manifest, signed API IDs + backup validation | CallerVerifierTest, AndroidCallerVerifierTest, ApiRequestTest, AlisaphoneCommandsTest including Room rollback and backup round trip |
+
+
+## 2026-11-11 — Categories redesign (#2673; awaiting CI)
+
+- Symptom: category Add below fold and weak contrast, clipped final row, four-column
+  layout on Fold, tiny labels, type switch discoverable only by tapping the ring.
+- Root cause: standalone Add tail row, fixed width/height assumptions, pager viewport
+  included bottom navigation, pastel circles and 9–11sp typography.
+- Fix: row-major 4/6-column measured layout, inline Add cell, explicit segment and
+  transaction FAB, Scaffold padding on shell, approved light/dark palette and
+  luminance-normalized category colors. Removed weighted chip spacers so minimum
+  row heights can safely grow with text. Existing seven-argument onSave preserved.
+- Files: CategoriesScreen.kt, CategoriesWidgets.kt, CategoryControls.kt, MainScreen.kt,
+  SharedMonthPill.kt, CategoryScreenTokens.kt, OneMoneyTokens.kt, Theme.kt, strings.
+- Verification: `git diff --check`, static XML/palette validation only. CI must run
+  `:app:compilePersonalDebugKotlin :app:testPersonalDebugUnitTest` and Compose tests.
+  Gradle, Kotlin compilation and Android tests were not run in this session.

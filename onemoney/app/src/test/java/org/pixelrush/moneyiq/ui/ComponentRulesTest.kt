@@ -17,10 +17,10 @@ class ComponentRulesTest {
         for (type in TransactionType.entries) {
             val budget = CategoryScreenTokens.resolve("Custom", type, Color.Blue, true)
             val plain = CategoryScreenTokens.resolve("Custom", type, Color.Blue, false)
-            assertEquals(Color.Blue, budget.iconTint)
-            assertEquals(Color.Blue, plain.iconTint)
-            assertEquals(0.22f, budget.circleBg.alpha, 0.005f)
-            assertEquals(0.10f, plain.circleBg.alpha, 0.005f)
+            assertEquals(budget, plain)
+            assertEquals(1f, budget.circleBg.alpha, 0f)
+            assertEquals(CategoryScreenTokens.categoryColor(Color.Blue, false), budget.circleBg)
+
         }
         val known = CategoryScreenTokens.byName.getValue("Продукти")
         assertEquals(known, CategoryScreenTokens.resolve("Продукти", TransactionType.EXPENSE, Color.Red, false))
