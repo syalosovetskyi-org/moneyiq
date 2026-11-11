@@ -1,4 +1,4 @@
-﻿package org.syalosovetskyi.onemoney.ui.categories
+package org.syalosovetskyi.onemoney.ui.categories
 
 import androidx.core.graphics.toColorInt
 import androidx.compose.foundation.Canvas
@@ -6,6 +6,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +18,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -68,198 +73,50 @@ internal fun CategoryChip(
     overrideCircle: Dp? = null,
 ) {
     val tokens = OneMoneyTheme.dimens
-    val typo   = OneMoneyTheme.typography
+    val typo = OneMoneyTheme.typography
     val colors = OneMoneyTheme.colors
-
-    val chipW      = overrideWidth  ?: if (isCompact) CHIP_WIDTH_COMPACT  else CHIP_WIDTH
-    val chipH      = overrideHeight ?: if (isCompact) CHIP_HEIGHT_COMPACT else CHIP_HEIGHT
-    val circleSize = overrideCircle ?: if (isCompact) tokens.categoryCircleCompactSize else tokens.categoryCircleSize
-    val iconSize   = if (isCompact) tokens.categoryIconCompactSize   else tokens.categoryIconSize
-
-    val budgetAmount = budgetOverride ?: category.budgetAmount
-    val hasBudget    = budgetAmount > 0.0
-    val remainingBudget = budgetAmount - spending
-    val overBudget   = hasBudget && remainingBudget < 0.0
-    val fillFraction = when {
-        hasBudget    -> (spending / budgetAmount).toFloat().coerceIn(0f, 1f)
-        spending > 0.0 -> 1f
-        else           -> 0f
-    }
-
-    val fallbackColor = remember(category.colorHex) {
-        parseColorHex(category.colorHex, FallbackCategoryColor)
-    }
-    val style  = CategoryScreenTokens.resolve(category.name, category.type, fallbackColor, hasBudget)
-    // Dark mode: the light pastel circle becomes a translucent tint of the icon accent.
-    val isDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val circleBg = if (isDarkTheme) style.iconTint.copy(alpha = 0.22f) else style.circleBg
-    val groupBg = remember(groupColorHex) {
-        groupColorHex?.let {
-            try { Color(it.toColorInt()).copy(alpha = 0.13f) }
-            catch (failure: Exception) {
-            org.syalosovetskyi.onemoney.CrashReporter.warning("CategoriesWidgets", "Operation failed", failure)
-            null
-        }
-        }
-    }
-
-    val iconKey = remember(category.icon, category.name) {
-        if (category.icon == "category")
-            suggestCategoryStyle(category.name, category.type).first
-        else
-            category.icon
-    }
-    val hasSpending = spending > 0.0
-    val iconTint = if (CategoryScreenTokens.byName.containsKey(category.name)) style.iconTint
-                   else if (hasSpending || hasBudget) Color.White else fallbackColor
-
-    // Білий доречний ВСЕРЕДИНІ кольорового кружка іконки, але не на світлій картці:
-    // сума під іконкою малювалась білим по білому і не читалась узагалі. Категорії поза
-    // CategoryScreenTokens.byName (усі підкатегорії та все, що приїхало з сервера)
-    // беруть власний колір категорії, і лише в темній темі лишається білий.
-    val amountTint = when {
-        !hasSpending                                           -> colors.secondaryText
-        CategoryScreenTokens.byName.containsKey(category.name) -> style.iconTint
-        isDarkTheme                                            -> Color.White
-        else                                                   -> fallbackColor
-    }
-
+    val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
+    val fallback = remember(category.colorHex) { parseColorHex(category.colorHex, FallbackCategoryColor) }
+    val style = CategoryScreenTokens.resolve(category.name, category.type, fallback,
+        (budgetOverride ?: category.budgetAmount) > 0, dark)
+    val iconKey = if (category.icon == "category") suggestCategoryStyle(category.name, category.type).first else category.icon
+    val budget = budgetOverride ?: category.budgetAmount
     Column(
-        modifier = Modifier
-            // heightIn(min), а не size: при збільшеному системному шрифті три текстові
-            // рядки чипа перестають вміщатися у фіксовану висоту, і нижня сума
-            // обрізалася. Тепер чип росте, а не ріже вміст.
-            .width(chipW)
-            .heightIn(min = chipH)
-            .let { m ->
-                when {
-                    isExpanded  -> m.clip(
-                        if (flatBottom) RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 0.dp, bottomEnd = 0.dp)
-                        else RoundedCornerShape(tokens.cardRadius)
-                    ).background(fallbackColor.copy(alpha = 0.12f))
-                    groupBg != null -> m.clip(RoundedCornerShape(tokens.cardRadius)).background(groupBg)
-                    else -> m
-                }
-            }
+        modifier = Modifier.width(overrideWidth ?: if (isCompact) CHIP_WIDTH_COMPACT else CHIP_WIDTH)
+            .heightIn(min = overrideHeight ?: 112.dp)
+            .testTag("category_cell_${category.id}")
+            .clip(RoundedCornerShape(tokens.cardRadius))
+            .then(if (isExpanded) Modifier.background(MaterialTheme.colorScheme.surfaceVariant) else Modifier)
             .combinedClickable(onClick = onClick, onLongClick = onLongPress, onDoubleClick = onDoubleClick)
-            .padding(horizontal = 2.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 2.dp, vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        // ── top group: title + top amount ─────────────────────────────────────
-        Spacer(Modifier.height(6.dp))
-        Text(
-            category.name,
-            style     = typo.categoryTitle,
-            maxLines  = 1,
-            overflow  = TextOverflow.Ellipsis,
-            softWrap  = false,
-            textAlign = TextAlign.Center,
-            color     = colors.primaryText,
-            modifier  = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(3.dp))
-        if (hasBudget) {
-            val budgetText = formatBudgetAmount(kotlin.math.abs(remainingBudget)) + " ₴"
-            Box(
-                modifier = if (overBudget) Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(fallbackColor)
-                    .padding(horizontal = 6.dp)
-                else Modifier,
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    budgetText,
-                    style      = typo.categoryTopAmount,
-                    fontWeight = FontWeight.Medium,
-                    overflow   = TextOverflow.Ellipsis,
-                    color      = if (overBudget) Color.White else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.42f),
-                    maxLines   = 1,
-                    textAlign  = TextAlign.Center
-                )
-            }
-        } else {
-            Text(
-                "0 ₴",
-                style     = typo.categoryTopAmount,
-                color     = colors.tertiaryText,
-                maxLines  = 1,
-                overflow  = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier  = Modifier.fillMaxWidth()
-            )
-        }
-        // ── circle: weight(1f) above + below keeps it centered ────────────────
-        Spacer(Modifier.weight(1f))
-        Box(
-            modifier = Modifier
-                .size(circleSize)
-                .then(
-                    if (isExpanded) Modifier.drawBehind {
-                        drawCircle(
-                            color  = fallbackColor.copy(alpha = 0.45f),
-                            radius = size.minDimension / 2f + 4.dp.toPx(),
-                            style  = Stroke(width = 2.5.dp.toPx())
-                        )
-                    } else Modifier
-                )
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape)
-                    .background(circleBg),
-                contentAlignment = Alignment.Center
-            ) {
-                if (fillFraction > 0f && !CategoryScreenTokens.byName.containsKey(category.name)) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .fillMaxHeight(fillFraction)
-                            .background(fallbackColor)
-                    )
-                }
-                Icon(
-                    categoryIconFor(iconKey), null,
-                    tint     = iconTint,
-                    modifier = Modifier.size(iconSize)
-                )
+        Box(Modifier.size(overrideCircle ?: tokens.categoryCircleSize), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().clip(CircleShape).background(style.circleBg), contentAlignment = Alignment.Center) {
+                Icon(categoryIconFor(iconKey), null, tint = style.iconTint, modifier = Modifier.size(tokens.categoryIconSize))
             }
             if (showChildBadge && childCount > 0) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .size(if (isCompact) tokens.childBadgeCompactSize else tokens.childBadgeSize)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "+$childCount",
-                        style    = MaterialTheme.typography.labelSmall.copy(fontSize = if (isCompact) 7.sp else 8.sp),
-                        color    = MaterialTheme.colorScheme.onPrimary,
-                        maxLines = 1
-                    )
-                }
+                Text("+$childCount", style = typo.subcategoryAmount,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.align(Alignment.TopEnd).clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary).padding(horizontal = 3.dp))
             }
         }
-        Spacer(Modifier.weight(1f))
-        // ── bottom amount ──────────────────────────────────────────────────────
-        Text(
-            formatMoney(spending) + " ₴",
-            style     = typo.categoryBottomAmount,
-            color     = amountTint,
-            maxLines  = 1,
-            overflow  = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-            modifier  = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(6.dp))
+        Text(category.name, style = typo.categoryTitle, color = colors.primaryText,
+            maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth())
+        Text(formatMoney(spending) + " ₴", style = typo.categoryBottomAmount,
+            color = if (spending == 0.0) colors.secondaryText else colors.primaryText,
+            maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().testTag("category_amount_${category.id}"))
+        if (budget > 0.0) {
+            Text(formatBudgetAmount(budget - spending) + " ₴", style = typo.categoryTopAmount,
+                color = if (spending > budget) colors.expenseRed else colors.secondaryText,
+                maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+        }
     }
 }
-
-
 
 // ── Інлайн-панель підкатегорій (в рядку доната) ──────────────────────────────
 
@@ -275,6 +132,7 @@ internal fun SideSubcategoryPanel(
 ) {
     val tokens = OneMoneyTheme.dimens
     val typo   = OneMoneyTheme.typography
+    val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
 
     val parentColor = remember(parent.colorHex) {
         parseColorHex(parent.colorHex, FallbackCategoryColor)
@@ -294,17 +152,13 @@ internal fun SideSubcategoryPanel(
                 val childColor = remember(child.colorHex) {
                     parseColorHex(child.colorHex, FallbackCategoryColor)
                 }
+                val childStyle = CategoryScreenTokens.resolve(child.name, child.type, childColor, child.budgetAmount > 0, dark)
                 val childIconKey = if (child.icon == "category")
                     suggestCategoryStyle(child.name, child.type).first else child.icon
                 val childSpend = spending[child.id] ?: 0.0
                 val hasBudget  = child.budgetAmount > 0.0
                 val remainingBudget = child.budgetAmount - childSpend
                 val overBudget = hasBudget && remainingBudget < 0.0
-                val fillFraction = when {
-                    hasBudget        -> (childSpend / child.budgetAmount).toFloat().coerceIn(0f, 1f)
-                    childSpend > 0.0 -> 1f
-                    else             -> 0f
-                }
 
                 Row(
                     modifier = Modifier
@@ -321,21 +175,12 @@ internal fun SideSubcategoryPanel(
                         modifier = Modifier
                             .size(tokens.sidePanelCircleSize)
                             .clip(CircleShape)
-                            .background(childColor.copy(alpha = if (hasBudget) 0.28f else 0.2f)),
+                            .background(childStyle.circleBg),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (fillFraction > 0f) {
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .fillMaxWidth()
-                                    .fillMaxHeight(fillFraction)
-                                    .background(childColor)
-                            )
-                        }
                         Icon(
                             categoryIconFor(childIconKey), null,
-                            tint     = if (childSpend > 0 || hasBudget) Color.White else childColor,
+                            tint     = childStyle.iconTint,
                             modifier = Modifier.size(tokens.sidePanelIconSize)
                         )
                     }
@@ -349,8 +194,8 @@ internal fun SideSubcategoryPanel(
                         Text(
                             formatMoney(childSpend) + " ₴",
                             style      = typo.subcategoryAmount,
-                            color      = if (childSpend > 0) childColor
-                                         else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                            color      = if (childSpend > 0) OneMoneyTheme.colors.primaryText
+                                         else OneMoneyTheme.colors.secondaryText,
                             maxLines   = 1
                         )
                     }
@@ -367,9 +212,11 @@ internal fun SideSubcategoryPanel(
                         ) {
                             Text(
                                 formatBudgetAmount(kotlin.math.abs(remainingBudget)) + " ₴",
-                                style      = typo.subcategoryAmount.copy(fontSize = 8.sp, lineHeight = 10.sp),
+                                style      = typo.subcategoryAmount.copy(fontSize = 12.sp, lineHeight = 16.sp),
                                 fontWeight = FontWeight.Medium,
-                                color      = if (overBudget) Color.White
+                                color      = if (overBudget) {
+                                    if (childColor.luminance() > .5f) org.syalosovetskyi.onemoney.ui.theme.OnLightColor else Color.White
+                                }
                                              else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
                                 maxLines   = 1
                             )
@@ -396,6 +243,7 @@ internal fun ExpandedCategoryStrip(
     inline:           Boolean = false
 ) {
     val tokens = OneMoneyTheme.dimens
+    val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
 
     val parentColor = remember(parent.colorHex) {
         parseColorHex(parent.colorHex, FallbackCategoryColor)
@@ -425,7 +273,7 @@ internal fun ExpandedCategoryStrip(
                 ) {
                     Icon(
                         categoryIconFor(parentIconKey), null,
-                        tint     = Color.White,
+                        tint     = if (parentColor.luminance() > .5f) org.syalosovetskyi.onemoney.ui.theme.OnLightColor else Color.White,
                         modifier = Modifier.size(tokens.categoryIconSize)
                     )
                 }
@@ -455,19 +303,21 @@ internal fun ExpandedCategoryStrip(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
                 .padding(horizontal = Spacing.sm, vertical = Spacing.md)
         ) {
-            sortedKids.take(4).forEach { child ->
+            sortedKids.forEach { child ->
                 val childColor = remember(child.colorHex) {
                     parseColorHex(child.colorHex, FallbackCategoryColor)
                 }
+                val childStyle = CategoryScreenTokens.resolve(child.name, child.type, childColor, child.budgetAmount > 0, dark)
                 val childIconKey = if (child.icon == "category")
                     suggestCategoryStyle(child.name, child.type).first else child.icon
                 val childSpend = spending[child.id] ?: 0.0
 
                 Column(
                     modifier = Modifier
-                        .weight(1f)
+                        .width(84.dp)
                         .combinedClickable(
                             onClick     = { onClickChild(child) },
                             onLongClick = { onLongClickChild(child) }
@@ -478,12 +328,12 @@ internal fun ExpandedCategoryStrip(
                         modifier = Modifier
                             .size(tokens.categoryCircleSize)
                             .clip(CircleShape)
-                            .background(if (childSpend > 0) childColor else childColor.copy(alpha = 0.2f)),
+                            .background(childStyle.circleBg),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             categoryIconFor(childIconKey), null,
-                            tint     = if (childSpend > 0) Color.White else childColor,
+                            tint     = childStyle.iconTint,
                             modifier = Modifier.size(tokens.categoryIconCompactSize)
                         )
                     }
@@ -499,7 +349,7 @@ internal fun ExpandedCategoryStrip(
                     Text(
                         formatMoney(childSpend) + " ₴",
                         style      = OneMoneyTheme.typography.subcategoryAmount,
-                        color      = if (childSpend > 0) childColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                        color      = if (childSpend > 0) OneMoneyTheme.colors.primaryText else OneMoneyTheme.colors.secondaryText,
                         maxLines   = 1,
                         textAlign  = TextAlign.Center,
                         modifier   = Modifier.fillMaxWidth()
@@ -533,35 +383,20 @@ internal fun ExpandedCategoryStrip(
 // ── Чип «Додати» ─────────────────────────────────────────────────────────────
 
 @Composable
-internal fun AddCategoryChip(onClick: () -> Unit) {
+internal fun AddCategoryChip(onClick: () -> Unit, circleSize: Dp = OneMoneyTheme.dimens.addButtonSize) {
     val tokens = OneMoneyTheme.dimens
     val colors = OneMoneyTheme.colors
-
-    // Зона натискання 48dp за рекомендацією Material, кружечок лишається 40dp:
-    // клік навішений просто на розмір кружечка давав хітбокс рівно 40dp.
-    Box(
-        modifier = Modifier.size(48.dp),
-        contentAlignment = Alignment.Center
-    ) {
-    Box(
-        modifier = Modifier
-            .size(tokens.addButtonSize)
-            .clip(CircleShape)
-            .dashedCircleBorder(
-                color       = colors.addButtonStroke,
-                strokeWidth = tokens.addButtonStrokeWidth,
-                dashWidth   = tokens.addButtonDashWidth,
-                dashGap     = tokens.addButtonDashGap
-            )
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            Icons.Default.Add, null,
-            tint     = colors.addButtonIcon,
-            modifier = Modifier.size(tokens.addButtonIconSize)
-        )
-    }
+    Column(Modifier.testTag("new_category_cell").fillMaxWidth().clickable(onClick = onClick)
+        .padding(vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Box(Modifier.size(circleSize).dashedCircleBorder(colors.addButtonStroke,
+            strokeWidth = tokens.addButtonStrokeWidth,
+            dashWidth = tokens.addButtonDashWidth, dashGap = tokens.addButtonDashGap),
+            contentAlignment = Alignment.Center) {
+            Icon(Icons.Default.Add, null, tint = colors.addButtonIcon, modifier = Modifier.size(24.dp))
+        }
+        Text(stringResource(R.string.categories_new), style = OneMoneyTheme.typography.categoryTitle,
+            color = colors.secondaryText, maxLines = 2, textAlign = TextAlign.Center)
     }
 }
 
@@ -600,14 +435,17 @@ internal fun DonutChart(
 
     val tabTotal = activeSpending.sumOf { it.second }
 
+    val dark = surfaceColor.luminance() < .5f
     val categoryColors = activeSpending.map { (cat, _) ->
-        parseColorHex(cat.colorHex, FallbackCategoryColor)
+        CategoryScreenTokens.resolve(cat.name, cat.type,
+            parseColorHex(cat.colorHex, FallbackCategoryColor), false, dark).circleBg
     }
-
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
+    val label = stringResource(if (selectedTab == 0) R.string.common_expenses else R.string.common_incomes)
+    val amount = formatMoney(if (selectedTab == 0) totalExpense else totalIncome) + " ₴"
+    Box(modifier = modifier.clickable(onClick = onToggle).semantics(mergeDescendants = true) { contentDescription = "$label: $amount" }, contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.sizeIn(maxWidth = 200.dp, maxHeight = 240.dp).fillMaxSize()) {
             val minDim = size.minDimension
-            val sw     = minDim * 0.06f
+            val sw     = minDim * 0.10f
             val inset  = sw / 2f
             val arcDim = minDim - sw
             val arcSz  = Size(arcDim, arcDim)
@@ -615,9 +453,6 @@ internal fun DonutChart(
                 x = (size.width  - minDim) / 2f + inset,
                 y = (size.height - minDim) / 2f + inset
             )
-
-            // Inner fill (theme surface — white in light, dark in dark)
-            drawCircle(color = surfaceColor, radius = (minDim / 2f) - sw)
 
             if (tabTotal == 0.0) {
                 drawArc(
@@ -646,26 +481,17 @@ internal fun DonutChart(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .align(Alignment.Center)
-                .padding(horizontal = 20.dp)
-                .clickable(onClick = onToggle)
+                .padding(horizontal = Spacing.xl)
         ) {
             Text(
                 if (selectedTab == 0) stringResource(R.string.common_expenses) else stringResource(R.string.common_incomes),
                 style      = typo.centerTitle.copy(letterSpacing = 0.sp),
                 color      = MaterialTheme.colorScheme.onSurface
             )
-            Text(
-                formatMoney(totalExpense) + " ₴",
-                style      = typo.centerAmount.copy(letterSpacing = 0.sp),
-                color      = expenseColor,
-                maxLines   = 1
-            )
-            Text(
-                formatMoney(totalIncome) + " ₴",
-                style      = typo.centerAmount.copy(letterSpacing = 0.sp),
-                color      = incomeColor,
-                maxLines   = 1
-            )
+            Text(amount, style = typo.centerAmount.copy(letterSpacing = 0.sp),
+                color = if (tabTotal == 0.0) colors.secondaryText else if (selectedTab == 0) expenseColor else incomeColor,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+
         }
     }
 }

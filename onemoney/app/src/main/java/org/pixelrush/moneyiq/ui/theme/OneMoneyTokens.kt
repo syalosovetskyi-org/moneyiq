@@ -1,4 +1,4 @@
-﻿package org.syalosovetskyi.onemoney.ui.theme
+package org.syalosovetskyi.onemoney.ui.theme
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
@@ -11,6 +11,9 @@ import androidx.compose.ui.unit.sp
 
 @Immutable
 data class OneMoneyColors(
+    val expenseSoft: Color,
+    val incomeSoft: Color,
+    val transferSoft: Color,
     // ── Category screen ───────────────────────────────────────────────────────
     val primaryText:      Color,
     val secondaryText:    Color,
@@ -103,28 +106,30 @@ data class OneMoneyDimens(
     val selectionRingWidth:       Dp,   // 3dp — кольцо выделения иконки/цвета
 )
 
-// Dark-mode semantic tokens. Neutrals follow the same M3 dark tonal palette as the
-// dark colorScheme (surface #121318 family); brand/money colors are kept unchanged
-// (they read fine on dark). See dark-theme design spec.
+// Approved categories.html semantic tokens; shared by all feature screens.
 object OneMoneyDarkTokens {
     val colors = OneMoneyColors(
-        primaryText     = Color(0xFFE3E1EA),  // onSurface
-        secondaryText   = Color(0xFFA8A7B0),
-        tertiaryText    = Color(0xFF8B8A93),   // контраст на темному тлі: було ~4.0:1, стало ~4.8:1
-        centerRing      = Color(0xFF34353C),  // surfaceContainerHighest (donut empty ring)
-        expensePink     = Color(0xFFFFB4A9),
-        incomeTeal      = Color(0xFF6FD08C),
-        addButtonStroke = Color(0xFF45464F),
-        addButtonIcon   = Color(0xFF8F909A),
-        incomeGreen     = Color(0xFF6FD08C),
-        expenseRed      = Color(0xFFFFB4A9),
-        transferBlue    = Color(0xFFA8C8FF),
+        expenseSoft = Color(0xFF42232A),
+        incomeSoft = Color(0xFF1C3329),
+        transferSoft = Color(0xFF1D2F45),
+
+        primaryText     = Color(0xFFE6E8EB),  // ink
+        secondaryText   = Color(0xFFA3A9B2),
+        tertiaryText    = Color(0xFFA3A9B2),
+        centerRing      = Color(0xFF2F343C),  // line (empty ring)
+        expensePink     = Color(0xFFFF8A9B),
+        incomeTeal      = Color(0xFF4CC38A),
+        addButtonStroke = Color(0xFF6B737F),
+        addButtonIcon   = Color(0xFFA3A9B2),
+        incomeGreen     = Color(0xFF4CC38A),
+        expenseRed      = Color(0xFFFF8A9B),
+        transferBlue    = Color(0xFF6CB4EE),
         debtOrange      = Color(0xFFE9B3F5),
-        budgetExpense   = Color(0xFFFFB4A9),
-        budgetIncome    = Color(0xFF6FD08C),
-        bottomNavBg     = Color(0xFF1F2026),  // surfaceContainer
-        bottomNavPill   = Color(0xFF354378),  // primaryContainer
-        secondaryIcon   = Color(0xFFC6C5D0),
+        budgetExpense   = Color(0xFFFF8A9B),
+        budgetIncome    = Color(0xFF4CC38A),
+        bottomNavBg     = Color(0xFF1C1F24),  // surface
+        bottomNavPill   = Color(0xFF3A2A1E),  // accent-soft
+        secondaryIcon   = Color(0xFFA3A9B2),
     )
     val typography = OneMoneyLightTokens.typography
     val dimens     = OneMoneyLightTokens.dimens
@@ -132,33 +137,37 @@ object OneMoneyDarkTokens {
 
 object OneMoneyLightTokens {
     val colors = OneMoneyColors(
-        primaryText     = Color(0xFF111111),
-        secondaryText   = Color(0xFF8E8E8E),
-        tertiaryText    = Color(0xFFC9C9C9),
-        centerRing      = Color(0xFFE6E6EB),
-        expensePink     = ExpensePink,
-        incomeTeal      = IncomeTeal,
-        addButtonStroke = Color(0xFFD8D8D8),
-        addButtonIcon   = Color(0xFFB6B6B6),
-        incomeGreen     = IncomeGreen,
-        expenseRed      = ExpenseRed,
-        transferBlue    = TransferBlue,
+        expenseSoft = Color(0xFFFDE7EA),
+        incomeSoft = Color(0xFFE1F4EA),
+        transferSoft = Color(0xFFE3EEFB),
+
+        primaryText     = Color(0xFF16181C),
+        secondaryText   = Color(0xFF565C66),
+        tertiaryText    = Color(0xFF565C66),
+        centerRing      = Color(0xFFD5D9DF),
+        expensePink     = Color(0xFFB81F3B),
+        incomeTeal      = Color(0xFF0F7447),
+        addButtonStroke = Color(0xFF848B95),
+        addButtonIcon   = Color(0xFF565C66),
+        incomeGreen     = Color(0xFF0F7447),
+        expenseRed      = Color(0xFFB81F3B),
+        transferBlue    = Color(0xFF1F63B0),
         debtOrange      = DebtOrange,
-        budgetExpense   = BudgetExpenseColor,
-        budgetIncome    = BudgetIncomeColor,
-        bottomNavBg     = BottomNavBg,
-        bottomNavPill   = BottomNavActivePill,
-        secondaryIcon   = SecondaryIconColor,
+        budgetExpense   = Color(0xFFB81F3B),
+        budgetIncome    = Color(0xFF0F7447),
+        bottomNavBg     = Color(0xFFFFFFFF),
+        bottomNavPill   = Color(0xFFFBE9DA),
+        secondaryIcon   = Color(0xFF565C66),
     )
 
     val typography = OneMoneyTypography(
-        categoryTitle        = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Light,    fontSize = 11.sp, lineHeight = 13.sp),
-        categoryTopAmount    = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,   fontSize = 10.sp, lineHeight = 12.sp),
-        categoryBottomAmount = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,   fontSize = 10.sp, lineHeight = 12.sp),
+        categoryTitle        = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium,   fontSize = 13.sp, lineHeight = 16.sp),
+        categoryTopAmount    = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,   fontSize = 12.sp, lineHeight = 16.sp),
+        categoryBottomAmount = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,   fontSize = 12.sp, lineHeight = 16.sp),
         centerTitle          = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Light,    fontSize = 15.sp, lineHeight = 18.sp),
         centerAmount         = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Light,    fontSize = 15.sp, lineHeight = 18.sp),
-        subcategoryTitle     = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,   fontSize = 10.sp, lineHeight = 12.sp),
-        subcategoryAmount    = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,   fontSize =  9.sp, lineHeight = 11.sp),
+        subcategoryTitle     = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,   fontSize = 12.sp, lineHeight = 16.sp),
+        subcategoryAmount    = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,   fontSize =  12.sp, lineHeight = 16.sp),
         listItemTitle        = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 19.sp),
         listItemAmount       = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium,   fontSize = 13.sp, lineHeight = 17.sp),
         listItemSub          = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,   fontSize = 12.sp, lineHeight = 16.sp),
@@ -168,17 +177,17 @@ object OneMoneyLightTokens {
     )
 
     val dimens = OneMoneyDimens(
-        categoryCircleSize        = 54.dp,
-        categoryCircleCompactSize = 40.dp,
+        categoryCircleSize        = 56.dp,
+        categoryCircleCompactSize = 56.dp,
         categoryIconSize          = 24.dp,
         categoryIconCompactSize   = 22.dp,
         sidePanelCircleSize       = 32.dp,
         sidePanelIconSize         = 16.dp,
         childBadgeSize            = 18.dp,
         childBadgeCompactSize     = 16.dp,
-        addButtonSize             = 40.dp,
+        addButtonSize             = 56.dp,
         addButtonIconSize         = 18.dp,
-        addButtonStrokeWidth      = 1.dp,
+        addButtonStrokeWidth      = 2.dp,
         addButtonDashWidth        = 8.dp,
         addButtonDashGap          = 6.dp,
         cardRadius                = 12.dp,

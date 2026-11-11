@@ -1,4 +1,4 @@
-﻿package org.syalosovetskyi.onemoney.ui.main
+package org.syalosovetskyi.onemoney.ui.main
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.ui.res.stringResource
@@ -22,6 +22,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import org.syalosovetskyi.onemoney.ui.categories.CategoryTypeSegment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -128,6 +130,7 @@ fun MainScreen(
 
     // ── Редагування категорій ────────────────────────────────────────────────
     var showEditCategories by remember { mutableStateOf(false) }
+    var categoryTypeTab by remember { mutableIntStateOf(0) }
     val triggerEditCategories: () -> Unit = { showEditCategories = true }
     val categoriesState by categoriesViewModel.state.collectAsState()
 
@@ -138,7 +141,6 @@ fun MainScreen(
     var showBudgetSettings     by remember { mutableStateOf(false) }
     var filterByCategoryId     by remember { mutableStateOf<Long?>(null) }
     var filterByAccountId      by remember { mutableStateOf<Long?>(null) }
-    var categoriesCompact      by remember { mutableStateOf(false) }
 
     if (showDataScreen) {
         DataScreen(onNavigateBack = { showDataScreen = false })
@@ -180,12 +182,21 @@ fun MainScreen(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             val navColors = OneMoneyTheme.colors
+            val navAccent = MaterialTheme.colorScheme.primary
             NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                containerColor = navColors.bottomNavBg,
                 tonalElevation = 0.dp
             ) {
                 activeTabs.forEachIndexed { index, tab ->
                     NavigationBarItem(
+                        modifier = Modifier.drawWithContent {
+                            drawContent()
+                            if (currentPage == index) drawRect(
+                                color = navAccent,
+                                topLeft = androidx.compose.ui.geometry.Offset((size.width - 36.dp.toPx()) / 2, 0f),
+                                size = androidx.compose.ui.geometry.Size(36.dp.toPx(), 3.dp.toPx())
+                            )
+                        },
                         selected = currentPage == index,
                         onClick  = { scope.launch { pagerState.animateScrollToPage(index) } },
                         icon = {
@@ -197,24 +208,24 @@ fun MainScreen(
                         label  = {
                             Text(
                                 stringResource(tab.titleRes), maxLines = 1,
-                                fontSize   = 10.sp,
+                                fontSize   = 13.sp,
                                 fontWeight = if (currentPage == index) FontWeight.Medium else FontWeight.Light,
                                 letterSpacing = 0.sp
                             )
                         },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor   = navColors.primaryText,
-                            selectedTextColor   = navColors.primaryText,
-                            indicatorColor      = navColors.bottomNavPill,
-                            unselectedIconColor = navColors.primaryText,
-                            unselectedTextColor = navColors.primaryText,
+                            selectedIconColor   = MaterialTheme.colorScheme.primary,
+                            selectedTextColor   = MaterialTheme.colorScheme.primary,
+                            indicatorColor      = androidx.compose.ui.graphics.Color.Transparent,
+                            unselectedIconColor = navColors.secondaryText,
+                            unselectedTextColor = navColors.secondaryText,
                         )
                     )
                 }
             }
         }
     ) { padding ->
-        val bottomPadding = PaddingValues(bottom = padding.calculateBottomPadding())
+        val bottomPadding = PaddingValues(0.dp)
 
         // Logical tab index → content page (accounting for hidden Budget tab)
         val pageToContent: (Int) -> Int = { page ->
@@ -226,7 +237,8 @@ fun MainScreen(
         Column(
             Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
+                .padding(padding)
+                .consumeWindowInsets(padding)
                 .edgeSwipe(
                     onLeftEdge  = { scope.launch { drawerState.open() } },
                     onRightEdge = goBack
@@ -240,7 +252,10 @@ fun MainScreen(
                 onEditCategories    = triggerEditCategories,
                 onSettings          = { showSettingsScreen = true },
                 onSearchTx          = { openTxSearch = true },
-                onBudgetSettings    = { showBudgetSettings = true }
+                onBudgetSettings    = { showBudgetSettings = true },
+                categoryTypeControl = if (contentPage == 1) ({
+                    CategoryTypeSegment(categoryTypeTab, Modifier.width(176.dp)) { categoryTypeTab = it }
+                }) else null
             )
 
             if (missingRates.isNotEmpty()) {
@@ -269,7 +284,8 @@ fun MainScreen(
                     1 -> CategoriesScreen(
                              padding          = bottomPadding,
                              embeddedMode     = true,
-                             isCompact        = categoriesCompact,
+                             selectedTypeTab  = categoryTypeTab,
+                             onSelectTypeTab  = { categoryTypeTab = it },
                              onViewCategoryTx = { cat ->
                                  filterByCategoryId = cat.id
                                  scope.launch { pagerState.animateScrollToPage(txTabIndex) }
@@ -461,12 +477,13 @@ fun SharedTopBar(
     onEditCategories:   () -> Unit = {},
     onSettings:         () -> Unit = {},
     onSearchTx:         () -> Unit = {},
-    onBudgetSettings:   () -> Unit = {}
+    onBudgetSettings:   () -> Unit = {},
+    categoryTypeControl: (@Composable () -> Unit)? = null
 ) {
     Row(
         modifier          = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(if (currentPage == 1) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.surfaceVariant)
             .padding(horizontal = Spacing.sm, vertical = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -507,6 +524,8 @@ fun SharedTopBar(
         }
 
         Spacer(Modifier.width(Spacing.md))
+
+        categoryTypeControl?.invoke()
 
         // Права кнопка
         val (icon, description, action) = when (currentPage) {

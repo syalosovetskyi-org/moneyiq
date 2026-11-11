@@ -432,4 +432,8 @@
     <string name="default_account_name">Гаманець</string>
     <string name="missing_currency_rates">Неповний підсумок: немає курсу %1$s. Суми наведено в UAH.</string>
     <string name="data_monoflow_not_configured">Не налаштовано</string>
+    <string name="categories_new">Нова категорія</string>
+    <string name="categories_add_expense">Додати витрату</string>
+    <string name="categories_add_income">Додати дохід</string>
+    <string name="categories_empty_period">У цьому періоді операцій ще немає. Додайте першу кнопкою внизу.</string>
 </resources>

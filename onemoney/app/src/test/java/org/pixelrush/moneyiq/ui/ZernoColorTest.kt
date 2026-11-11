@@ -8,8 +8,8 @@ import org.syalosovetskyi.onemoney.ui.theme.*
 
 class ZernoColorTest {
     @Test fun `money tokens meet text contrast in both themes`() {
-        for ((tokens, surface) in listOf(OneMoneyLightTokens.colors to Color(0xFFFFF8F4),
-            OneMoneyDarkTokens.colors to Color(0xFF17130D))) {
+        for ((tokens, surface) in listOf(OneMoneyLightTokens.colors to Color(0xFFFFFFFF),
+            OneMoneyDarkTokens.colors to Color(0xFF1C1F24))) {
             for (color in listOf(tokens.incomeGreen, tokens.expenseRed, tokens.transferBlue, tokens.debtOrange)) {
                 val a = color.luminance()
                 val b = surface.luminance()
