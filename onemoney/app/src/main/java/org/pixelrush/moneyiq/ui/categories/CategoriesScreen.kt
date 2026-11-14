@@ -129,7 +129,7 @@ fun CategoriesScreen(
         )
 
         if (selectedTypeTab == null) CategoryTypeSegment(selectedTab,
-            Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm).fillMaxWidth(), selectTab)
+            Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm).fillMaxWidth(), onSelect = selectTab)
         Box(Modifier.weight(1f).fillMaxWidth()) {
             CategoriesGridContent(
                 categories            = categories,
