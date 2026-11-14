@@ -38,6 +38,15 @@ interface CategoryDao {
     @Query("SELECT COUNT(*) FROM categories")
     suspend fun count(): Int
 
+    @Query("UPDATE categories SET parentId = :parentId WHERE id = :id")
+    suspend fun setParent(id: Long, parentId: Long)
+
+    @Query("UPDATE categories SET parentId = :to WHERE parentId = :from")
+    suspend fun moveChildren(from: Long, to: Long)
+
+    @Query("DELETE FROM categories WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
     @Query("DELETE FROM categories")
     suspend fun deleteAllCategories()
 }

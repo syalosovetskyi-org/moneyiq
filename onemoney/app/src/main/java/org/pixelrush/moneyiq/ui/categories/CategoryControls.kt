@@ -32,17 +32,25 @@ internal fun CategoryQuickAddButton(selectedTab: Int, modifier: Modifier = Modif
 }
 
 @Composable
-internal fun CategoryTypeSegment(selectedTab: Int, modifier: Modifier = Modifier, onSelect: (Int) -> Unit) {
+internal fun CategoryTypeSegment(
+    selectedTab: Int,
+    modifier: Modifier = Modifier,
+    /** false — сегменты по ширине подписи (верхняя панель): фиксированная ширина ломала
+     *  «Витрати» по буквам на Fold и при крупном шрифте (serg/tasks#2673) */
+    equalWidth: Boolean = true,
+    onSelect: (Int) -> Unit,
+) {
     Row(modifier.heightIn(min = 44.dp)
         .clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.surfaceVariant)
         .selectableGroup()) {
         listOf(R.string.common_expenses, R.string.common_incomes).forEachIndexed { index, label ->
-            Box(Modifier.weight(1f).heightIn(min = 44.dp).clip(RoundedCornerShape(50))
+            Box((if (equalWidth) Modifier.weight(1f) else Modifier.widthIn(min = 88.dp))
+                .heightIn(min = 44.dp).clip(RoundedCornerShape(50))
                 .background(if (selectedTab != index) MaterialTheme.colorScheme.surfaceVariant
                     else if (index == 0) OneMoneyTheme.colors.expenseSoft else OneMoneyTheme.colors.incomeSoft)
                 .selectable(selected = selectedTab == index, role = Role.Tab, onClick = { onSelect(index) })
-                .padding(Spacing.sm), contentAlignment = Alignment.Center) {
-                Text(stringResource(label), color = if (selectedTab != index) OneMoneyTheme.colors.secondaryText
+                .padding(horizontal = Spacing.md, vertical = Spacing.sm), contentAlignment = Alignment.Center) {
+                Text(stringResource(label), maxLines = 1, softWrap = false, color = if (selectedTab != index) OneMoneyTheme.colors.secondaryText
                     else if (index == 0) OneMoneyTheme.colors.expenseRed else OneMoneyTheme.colors.incomeGreen)
             }
         }

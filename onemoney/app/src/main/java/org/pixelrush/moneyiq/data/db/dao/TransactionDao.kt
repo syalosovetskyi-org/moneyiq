@@ -134,6 +134,9 @@ interface TransactionDao {
     @Query("DELETE FROM transactions")
     suspend fun deleteAllTransactions()
 
+    @Query("UPDATE transactions SET categoryId = :to WHERE categoryId = :from")
+    suspend fun moveCategory(from: Long, to: Long)
+
     @Query("SELECT COUNT(*) FROM transactions")
     suspend fun count(): Int
 

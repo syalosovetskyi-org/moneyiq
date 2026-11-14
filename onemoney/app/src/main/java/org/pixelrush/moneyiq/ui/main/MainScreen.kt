@@ -254,7 +254,7 @@ fun MainScreen(
                 onSearchTx          = { openTxSearch = true },
                 onBudgetSettings    = { showBudgetSettings = true },
                 categoryTypeControl = if (contentPage == 1) ({
-                    CategoryTypeSegment(categoryTypeTab, Modifier.width(176.dp)) { categoryTypeTab = it }
+                    CategoryTypeSegment(categoryTypeTab, equalWidth = false) { categoryTypeTab = it }
                 }) else null
             )
 
