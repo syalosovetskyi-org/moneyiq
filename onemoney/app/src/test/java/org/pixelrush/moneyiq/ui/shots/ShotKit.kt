@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
@@ -77,6 +78,8 @@ class ShotSpec(
     val state: String,
     val prepare: (ComposeContentTestRule) -> Unit = {},
     val pausedClock: Boolean = false,
+    /** Вкладка, яку в застосунку хостить Scaffold MainScreen: обгортаємо в Surface, щоб LocalContentColor був як на пристрої. */
+    val inScaffold: Boolean = false,
     val content: @Composable () -> Unit,
 )
 
@@ -113,10 +116,13 @@ class ShotEnvRule(private val config: ShotConfig) : TestRule {
 
 /** Тема Zerno як у MainActivity: onemoneyTheme + токени OneMoney, без кастомного акценту. */
 @Composable
-fun ShotTheme(dark: Boolean, content: @Composable () -> Unit) {
+fun ShotTheme(dark: Boolean, inScaffold: Boolean = false, content: @Composable () -> Unit) {
     onemoneyTheme(darkTheme = dark, accentColor = null) {
         OneMoneyThemeProvider(darkTheme = dark) {
-            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { content() }
+            // Вкладки в застосунку лежать у Scaffold (Surface задає contentColor = onBackground).
+            // Оверлеї MainScreen (EditCategoriesScreen тощо) — поза Scaffold, там лишаємо голий Box, як на пристрої.
+            if (inScaffold) Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) { content() }
+            else Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { content() }
         }
     }
 }
@@ -151,7 +157,7 @@ class ShotRunner(private val compose: ComposeContentTestRule, private val case: 
             ShotData.categories
             ShotData.transactions
             if (spec.pausedClock) compose.mainClock.autoAdvance = false
-            compose.setContent { ShotTheme(case.config.dark) { spec.content() } }
+            compose.setContent { ShotTheme(case.config.dark, spec.inScaffold) { spec.content() } }
             settle()
             spec.prepare(compose)
             settle()

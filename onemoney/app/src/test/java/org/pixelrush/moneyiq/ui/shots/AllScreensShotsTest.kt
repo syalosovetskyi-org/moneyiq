@@ -59,35 +59,35 @@ class AllScreensShotsTest(case: ShotCase) : ShotTestBase(case) {
 
         private fun dataSpecs(): List<ShotSpec> = listOf(
             // ── Вкладки (embeddedMode, як усередині MainScreen) ──
-            ShotSpec("overview", "data") {
+            ShotSpec("overview", "data", inScaffold = true) {
                 val vm = remember { ShotVm.overview(D.overviewState) }
                 OverviewScreen(embeddedMode = true, viewModel = vm)
             },
-            ShotSpec("transactions", "data") {
+            ShotSpec("transactions", "data", inScaffold = true) {
                 val vm = remember { ShotVm.txList(D.txListState) }
                 TransactionsListScreen(embeddedMode = true, viewModel = vm)
             },
-            ShotSpec("categories", "expense") {
+            ShotSpec("categories", "expense", inScaffold = true) {
                 val vm = remember { ShotVm.categories(D.categoriesState) }
                 CategoriesScreen(embeddedMode = true, viewModel = vm, selectedTypeTab = 0)
             },
-            ShotSpec("categories", "income") {
+            ShotSpec("categories", "income", inScaffold = true) {
                 val vm = remember { ShotVm.categories(D.categoriesState) }
                 CategoriesScreen(embeddedMode = true, viewModel = vm, selectedTypeTab = 1)
             },
-            ShotSpec("accounts", "data") {
+            ShotSpec("accounts", "data", inScaffold = true) {
                 val vm = remember { ShotVm.accounts(D.accountsState) }
                 AccountsScreen(embeddedMode = true, viewModel = vm)
             },
-            ShotSpec("accounts", "finances", prepare = { it.onNodeWithText(str(R.string.acc_tab_finances)).performClick() }) {
+            ShotSpec("accounts", "finances", inScaffold = true, prepare = { it.onNodeWithText(str(R.string.acc_tab_finances)).performClick() }) {
                 val vm = remember { ShotVm.accounts(D.accountsState) }
                 AccountsScreen(embeddedMode = true, viewModel = vm)
             },
-            ShotSpec("budget", "data") {
+            ShotSpec("budget", "data", inScaffold = true) {
                 val vm = remember { ShotVm.budget(D.budgetState) }
                 BudgetScreen(embeddedMode = true, viewModel = vm)
             },
-            ShotSpec("reports", "data") {
+            ShotSpec("reports", "data", inScaffold = true) {
                 val vm = remember { ShotVm.reports(D.reportsState) }
                 ReportsScreen(viewModel = vm)
             },
@@ -145,27 +145,27 @@ class AllScreensShotsTest(case: ShotCase) : ShotTestBase(case) {
         )
 
         private fun emptySpecs(): List<ShotSpec> = listOf(
-            ShotSpec("overview", "empty") {
+            ShotSpec("overview", "empty", inScaffold = true) {
                 val vm = remember { ShotVm.overview(D.overviewEmpty) }
                 OverviewScreen(embeddedMode = true, viewModel = vm)
             },
-            ShotSpec("transactions", "empty") {
+            ShotSpec("transactions", "empty", inScaffold = true) {
                 val vm = remember { ShotVm.txList(D.txListEmpty) }
                 TransactionsListScreen(embeddedMode = true, viewModel = vm)
             },
-            ShotSpec("categories", "empty") {
+            ShotSpec("categories", "empty", inScaffold = true) {
                 val vm = remember { ShotVm.categories(D.categoriesEmpty) }
                 CategoriesScreen(embeddedMode = true, viewModel = vm, selectedTypeTab = 0)
             },
-            ShotSpec("accounts", "empty") {
+            ShotSpec("accounts", "empty", inScaffold = true) {
                 val vm = remember { ShotVm.accounts(D.accountsEmpty) }
                 AccountsScreen(embeddedMode = true, viewModel = vm)
             },
-            ShotSpec("budget", "empty") {
+            ShotSpec("budget", "empty", inScaffold = true) {
                 val vm = remember { ShotVm.budget(D.budgetEmpty) }
                 BudgetScreen(embeddedMode = true, viewModel = vm)
             },
-            ShotSpec("reports", "empty") {
+            ShotSpec("reports", "empty", inScaffold = true) {
                 val vm = remember { ShotVm.reports(D.reportsEmpty) }
                 ReportsScreen(viewModel = vm)
             },
