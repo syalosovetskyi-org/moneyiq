@@ -105,7 +105,7 @@ class AllSheetsShotsTest(case: ShotCase) : ShotTestBase(case) {
             },
             ShotSpec("repeat-dialog", "data") { RepeatDialog(current = "MONTHLY", onSelect = {}, onDismiss = {}) },
             ShotSpec("reminder-dialog", "data") { ReminderDialog(current = "SAME_DAY", onSelect = {}, onDismiss = {}) },
-            ShotSpec("desc-editor", "data") {
+            ShotSpec("desc-editor", "data", pausedClock = true) {
                 DescEditorDialog(initial = D.accMono.description, onSave = {}, onDismiss = {})
             },
             ShotSpec("tx-detail", "expense") { TxDetail(index = 1) },
@@ -174,7 +174,7 @@ class AllSheetsShotsTest(case: ShotCase) : ShotTestBase(case) {
                 ColorPickerSheet(colors = ACCOUNT_FORM_COLORS, selected = ACCOUNT_FORM_COLORS.first(), onSelect = {},
                     onDismiss = {})
             },
-            ShotSpec("balance-input", "data") {
+            ShotSpec("balance-input", "data", pausedClock = true) {
                 BalanceInputDialog(initial = "1234567.89", symbol = "₴", onSave = {}, onDismiss = {})
             },
             ShotSpec("currency-picker", "data") { CurrencyPickerSheet(selected = "UAH", onSelect = {}, onDismiss = {}) },
@@ -213,7 +213,7 @@ class AllSheetsShotsTest(case: ShotCase) : ShotTestBase(case) {
                 RadioListDialog(title = "Перший день тижня", icon = Icons.Filled.DateRange,
                     options = listOf("Понеділок", "Неділя", "Субота"), selected = 0, onSelect = {}, onDismiss = {})
             },
-            ShotSpec("text-input", "data") {
+            ShotSpec("text-input", "data", pausedClock = true) {
                 TextInputDialog(title = "Назва резервної копії", label = "Назва",
                     initialValue = "Резервна копія перед оновленням застосунку", onConfirm = {}, onDismiss = {})
             },

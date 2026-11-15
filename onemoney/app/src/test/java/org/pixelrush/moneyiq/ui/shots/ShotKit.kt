@@ -63,11 +63,20 @@ object ShotMatrix {
     val empty: List<ShotConfig> = listOf(ShotConfig(ShotDevice.S23, 1.0f, dark = false))
 }
 
-/** Що знімаємо: вміст + необов'язкова дія перед знімком (клік по вкладці тощо). */
+/**
+ * Що знімаємо: вміст + необов'язкова дія перед знімком (клік по вкладці тощо).
+ *
+ * [pausedClock] — для вмісту з нескінченною анімацією (сфокусоване поле в AlertDialog: блимання
+ * курсора — `delay` на тестовому годиннику). З autoAdvance=true waitForIdle крутить годинник
+ * без кінця і падає AppNotIdleException через 60 с. Тут годинник зупинено, час просуваємо вручну
+ * на [ShotRunner.SETTLE_MS] (рівно, тож знімок детермінований), а waitForIdle чекає лише
+ * рекомпозиції/розмітки — аудит працює як для решти.
+ */
 class ShotSpec(
     val screen: String,
     val state: String,
     val prepare: (ComposeContentTestRule) -> Unit = {},
+    val pausedClock: Boolean = false,
     val content: @Composable () -> Unit,
 )
 
@@ -141,10 +150,11 @@ class ShotRunner(private val compose: ComposeContentTestRule, private val case: 
             // Фікстуру (in-memory Room) вантажимо до composition, а не всередині неї.
             ShotData.categories
             ShotData.transactions
+            if (spec.pausedClock) compose.mainClock.autoAdvance = false
             compose.setContent { ShotTheme(case.config.dark) { spec.content() } }
-            compose.waitForIdle()
+            settle()
             spec.prepare(compose)
-            compose.waitForIdle()
+            settle()
             capture(case.stem)
         } catch (t: Throwable) {
             Findings.add("${case.stem}.png", "render-error", describe(t), "")
@@ -167,6 +177,16 @@ class ShotRunner(private val compose: ComposeContentTestRule, private val case: 
             }
             audit(case.endStem)
         }
+    }
+
+    /**
+     * Звичайний кейс — waitForIdle (годинник крутиться сам до кінця анімацій). Кейс з
+     * [ShotSpec.pausedClock] — фіксований крок часу, потім waitForIdle, який при
+     * autoAdvance=false годинник не чіпає і чекає лише рекомпозицію/розмітку.
+     */
+    private fun settle() {
+        if (case.spec.pausedClock) compose.mainClock.advanceTimeBy(SETTLE_MS)
+        compose.waitForIdle()
     }
 
     private fun capture(stem: String) {
@@ -200,7 +220,7 @@ class ShotRunner(private val compose: ComposeContentTestRule, private val case: 
                     ?: return@repeat
                 if (range.maxValue() <= 0f || range.value() >= range.maxValue() - 0.5f) return@repeat
                 node.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 1_000_000f) }
-                compose.waitForIdle()
+                settle()
                 moved = true
             }
         }
@@ -209,7 +229,13 @@ class ShotRunner(private val compose: ComposeContentTestRule, private val case: 
 
     private fun describe(t: Throwable) = "${t::class.java.simpleName}: ${t.message ?: "(без повідомлення)"}"
 
-    private companion object {
-        const val MAX_SCROLL_STEPS = 10
+    companion object {
+        private const val MAX_SCROLL_STEPS = 10
+        /**
+         * Крок часу для [ShotSpec.pausedClock] на кожен settle(): вистачає на появу діалогу й
+         * анімацію мітки поля (~150 мс). Сумарний час до знімка фіксований (2 кроки = 800 мс), тож
+         * фаза блимання курсора на знімку однакова від прогону до прогону.
+         */
+        const val SETTLE_MS = 400L
     }
 }
