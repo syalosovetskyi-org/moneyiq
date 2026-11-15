@@ -130,7 +130,12 @@ fun CategoriesScreen(
 
         if (selectedTypeTab == null) CategoryTypeSegment(selectedTab,
             Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm).fillMaxWidth(), onSelect = selectTab)
-        Box(Modifier.weight(1f).fillMaxWidth()) {
+        CategoriesGridWithQuickAdd(
+            selectedTab      = selectedTab,
+            fabBottomPadding = padding.calculateBottomPadding() + Spacing.lg,
+            onQuickAdd       = { if (allCategoriesForTab.isEmpty()) showAddSheet = true else showQuickPicker = true },
+            modifier         = Modifier.weight(1f).fillMaxWidth()
+        ) { fabOverlap ->
             CategoriesGridContent(
                 categories            = categories,
                 allCategoriesForTab   = allCategoriesForTab,
@@ -150,12 +155,9 @@ fun CategoriesScreen(
                 showSubcategories     = state.showSubcategories,
                 onToggleSubcategories = viewModel::toggleSubcategories,
                 childCounts           = childCounts,
-                sortBySpending        = false
+                sortBySpending        = false,
+                fabOverlap            = fabOverlap
             )
-            CategoryQuickAddButton(selectedTab, modifier = Modifier.align(Alignment.BottomEnd)
-                .padding(end = Spacing.lg, bottom = padding.calculateBottomPadding() + Spacing.lg)) {
-                if (allCategoriesForTab.isEmpty()) showAddSheet = true else showQuickPicker = true
-            }
         }
     }
     if (showQuickPicker) QuickCategoryPickerSheet(
@@ -351,7 +353,10 @@ internal fun CategoriesGridContent(
     childCounts:           Map<Long, Int>           = emptyMap(),
     sortBySpending:        Boolean                          = true,
     chipExtraModifier:     (CategoryEntity?) -> Modifier    = { Modifier },
-    onChipDragSwap:        ((Long, Long) -> Unit)?          = null
+    onChipDragSwap:        ((Long, Long) -> Unit)?          = null,
+    /** Скільки FAB займає від нижнього краю сітки (FAB + його нижній відступ), див.
+     *  [CategoriesGridWithQuickAdd]. null — FAB над сіткою немає або ще не виміряний. */
+    fabOverlap:            Dp?                              = null
 ) {
     val sorted: List<CategoryEntity> = if (sortBySpending)
         categories.sortedByDescending { spending[it.id] ?: 0.0 }
@@ -404,7 +409,7 @@ internal fun CategoriesGridContent(
         val stripAfter = expandedRow?.let { if (it in 1..2) 2 else it }
         LazyColumn(
             modifier = Modifier.fillMaxSize().testTag("category_grid_$columns"),
-            contentPadding = PaddingValues(top = Spacing.sm, bottom = bottomPadding + 80.dp)
+            contentPadding = PaddingValues(top = Spacing.sm, bottom = categoryGridBottomPadding(bottomPadding, fabOverlap))
         ) {
             if (categories.isEmpty()) item {
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -419,7 +424,7 @@ internal fun CategoriesGridContent(
             }
             item(key = "category_cells") {
                 Layout(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp).testTag(TAG_CATEGORY_CELLS),
                     content = {
                         display.forEach { cat ->
                             CategoryGridSlot(
@@ -503,6 +508,20 @@ internal fun CategoriesGridContent(
         }
     }
 }
+
+internal const val TAG_CATEGORY_CELLS = "category_cells"
+
+/** Запас під FAB, поки його висоту ще не виміряно (і для екранів без FAB) — як було до #2673. */
+internal val CATEGORY_GRID_LEGACY_FAB_SPACE = 80.dp
+
+/**
+ * Нижній відступ сітки: від реальної висоти FAB ([fabOverlap] уже містить [bottomPadding]
+ * і нижній відступ FAB) плюс зазор [Spacing.md]. Захардкожені 80.dp при шрифті 1.3 на S23
+ * лишали між останнім рядом і FAB менше [Spacing.md] (serg/tasks#2673).
+ */
+internal fun categoryGridBottomPadding(bottomPadding: Dp, fabOverlap: Dp?): Dp =
+    if (fabOverlap == null) bottomPadding + CATEGORY_GRID_LEGACY_FAB_SPACE
+    else maxOf(bottomPadding, fabOverlap) + Spacing.md
 
 internal fun categoryColumnCount(width: Dp): Int = if (width < 600.dp) 4 else 6
 

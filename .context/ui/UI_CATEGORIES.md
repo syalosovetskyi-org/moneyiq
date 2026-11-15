@@ -273,7 +273,11 @@ LaunchedEffect(allCategoriesForTab) { localCats.clear(); localCats.addAll(allCat
   Пристрої: S23 `w384dp-h832dp-port`, Fold закритий `w369dp-h905dp-port`, Fold «книжка» `w690dp-h829dp-port`,
   Fold горизонтально `w829dp-h690dp-land` (усі xxhdpi) x fontScale 1.0 / 1.3. Перевіряється: кожен корінь видно
   один раз; «Витрати»/«Доходи» в один рядок (`lineCount == 1`) у повноширокому сегменті та в `equalWidth = false`;
-  є FAB «Додати витрату».
+  є FAB «Додати витрату»; підпис кожної клітинки (корені + «Нова категорія») не рве слово між рядками
+  (`getLineForOffset` початку й кінця слова збігаються), однослівні — один рядок без еліпсиса (довге слово
+  зменшує кегль до 0.75, `CategoryCellLabel`); після докрутки сітки до кінця FAB (`CategoriesGridWithQuickAdd`)
+  не перетинає жодної клітинки, а останній ряд — щонайменше `Spacing.md` над верхом FAB (відступ сітки від
+  виміряної висоти FAB, `categoryGridBottomPadding`, а не 80.dp). Знімок `_end.png` — стан після докрутки.
 - Знімки: `categories_<device>_<font>.png` у `onemoney/app/build/outputs/roborazzi`, артефакт CI
   `roborazzi-screenshots`. Записуються з `-Proborazzi.test.record=true`; порівняння з еталоном (verify) поки вимкнено.
 - Нова зміна розкладки екрана категорій має додавати пристрій/шрифт сюди, а не лишатись перевіркою «на телефоні».
