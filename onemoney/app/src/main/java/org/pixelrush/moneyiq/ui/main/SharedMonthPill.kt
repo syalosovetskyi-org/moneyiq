@@ -512,7 +512,7 @@ private fun PeriodOptionCard(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DateRangePickerFullScreen(
+internal fun DateRangePickerFullScreen(
     onDismiss: () -> Unit,
     onConfirm: (startMs: Long, endMs: Long) -> Unit
 ) {
