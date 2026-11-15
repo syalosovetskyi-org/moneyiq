@@ -17,9 +17,6 @@ import org.syalosovetskyi.onemoney.data.repository.SettingsRepository
 import org.syalosovetskyi.onemoney.data.repository.TxOverrideRepository
 import org.syalosovetskyi.onemoney.util.BackupSerializer
 import org.syalosovetskyi.onemoney.util.NetworkTimeouts
-import org.syalosovetskyi.onemoney.util.normalizeImportedCategory
-import org.syalosovetskyi.onemoney.util.planDefaultCategoryMerge
-import org.syalosovetskyi.onemoney.data.db.entities.CategoryEntity
 import java.util.concurrent.TimeUnit
 
 // ── Hilt Entry Point ──────────────────────────────────────────────────────────
@@ -73,11 +70,7 @@ class MonoFlowSyncWorker(
             val data = BackupSerializer.deserialize(json)
 
             // MERGE: insert/replace по id, не видаляємо існуючі дані
-            ep.accountDao().insertAccounts(data.accounts)
-            val normalizedCats = data.categories.map { normalizeImportedCategory(it) }
-            ep.categoryDao().insertCategories(normalizedCats)
-            ep.transactionDao().insertTransactions(data.transactions)
-            mergeDefaultCategories(ep, normalizedCats)
+            applyMonoFlowSync(ep.accountDao(), ep.categoryDao(), ep.transactionDao(), data)
             Log.i(
                 TAG,
                 "синк: ${data.accounts.size} рахунків, ${data.categories.size} категорій, " +
@@ -105,21 +98,6 @@ class MonoFlowSyncWorker(
                 Result.failure()
             }
         }
-    }
-
-    /** Стандартні категорії свіжої установки зливаються з однойменними серверними,
-     *  інакше на головному екрані пари «Продукти / Продукти 0 ₴» (serg/tasks#2673). */
-    private suspend fun mergeDefaultCategories(ep: MonoFlowSyncEntryPoint, imported: List<CategoryEntity>) {
-        val cats = ep.categoryDao()
-        val plan = planDefaultCategoryMerge(cats.getAllCategoriesOnce(), imported)
-        if (plan.replace.isEmpty() && plan.reparent.isEmpty()) return
-        for ((child, parent) in plan.reparent) cats.setParent(child, parent)
-        for ((from, to) in plan.replace) {
-            ep.transactionDao().moveCategory(from, to)
-            cats.moveChildren(from, to)
-            cats.deleteById(from)
-        }
-        Log.i(TAG, "злито стандартних категорій: ${plan.replace.size}, перенесено підкатегорій: ${plan.reparent.size}")
     }
 
     // ── HTTP (без зовнішніх залежностей) ─────────────────────────────────────

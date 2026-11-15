@@ -260,3 +260,24 @@ LaunchedEffect(allCategoriesForTab) { localCats.clear(); localCats.addAll(allCat
 `localCats` drives the grid so swaps are visible immediately. DB write happens via `onReorder`.
 
 **Data flow:** No own ViewModel. All callbacks wired in `MainScreen` to `categoriesViewModel`.
+
+## Матриця пристроїв у CI (serg/tasks#2673)
+
+Джоб Unit Tests (`.github/workflows/ci.yml`) гонить сценарні тести та знімки екрана «Категорії»:
+
+- `MonoFlowSyncScenariosTest` — стани БД `fresh` (seedDefaults + синк), `upgrade` (повторний синк),
+  `fresh + своя категорія`. Синк застосовується через `applyMonoFlowSync` (workers/MonoFlowSyncApply.kt),
+  фікстура — `src/test/resources/fixtures/monoflow_categories.json`. Інваріанти: немає двох видимих коренів
+  з однаковим (name, type); EXPENSE-корені ⊆ дев'яти серверних + власні; операції не посилаються на видалені категорії.
+- `CategoriesDeviceMatrixTest` — Roborazzi, `@GraphicsMode(NATIVE)`, корені зі сценарію `fresh`.
+  Пристрої: S23 `w384dp-h832dp-port`, Fold закритий `w369dp-h905dp-port`, Fold «книжка» `w690dp-h829dp-port`,
+  Fold горизонтально `w829dp-h690dp-land` (усі xxhdpi) x fontScale 1.0 / 1.3. Перевіряється: кожен корінь видно
+  один раз; «Витрати»/«Доходи» в один рядок (`lineCount == 1`) у повноширокому сегменті та в `equalWidth = false`;
+  є FAB «Додати витрату»; підпис кожної клітинки (корені + «Нова категорія») не рве слово між рядками
+  (`getLineForOffset` початку й кінця слова збігаються), однослівні — один рядок без еліпсиса (довге слово
+  зменшує кегль до 0.75, `CategoryCellLabel`); після докрутки сітки до кінця FAB (`CategoriesGridWithQuickAdd`)
+  не перетинає жодної клітинки, а останній ряд — щонайменше `Spacing.md` над верхом FAB (відступ сітки від
+  виміряної висоти FAB, `categoryGridBottomPadding`, а не 80.dp). Знімок `_end.png` — стан після докрутки.
+- Знімки: `categories_<device>_<font>.png` у `onemoney/app/build/outputs/roborazzi`, артефакт CI
+  `roborazzi-screenshots`. Записуються з `-Proborazzi.test.record=true`; порівняння з еталоном (verify) поки вимкнено.
+- Нова зміна розкладки екрана категорій має додавати пристрій/шрифт сюди, а не лишатись перевіркою «на телефоні».

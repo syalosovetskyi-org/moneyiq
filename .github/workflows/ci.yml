@@ -37,8 +37,10 @@ jobs:
             "platforms;android-36" \
             "build-tools;35.0.0" 2>&1 | tail -5
 
+      # -Proborazzi.test.record=true: заодно пишемо PNG матриці пристроїв (serg/tasks#2673);
+      # порівняння з еталоном поки не вмикаємо, лише запис + звичайні assert'и.
       - name: Run unit tests
-        run: gradle :app:testPersonalDebugUnitTest :app:testPlayDebugUnitTest --no-daemon --stacktrace
+        run: gradle :app:testPersonalDebugUnitTest :app:testPlayDebugUnitTest -Proborazzi.test.record=true --no-daemon --stacktrace
         working-directory: onemoney
 
       - name: Generate coverage report
@@ -51,6 +53,15 @@ jobs:
         with:
           name: unit-test-report
           path: onemoney/app/build/reports/tests/
+          retention-days: 14
+
+      - name: Upload Roborazzi screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: roborazzi-screenshots
+          path: onemoney/app/build/outputs/roborazzi/
+          if-no-files-found: warn
           retention-days: 14
 
       - name: Upload coverage report

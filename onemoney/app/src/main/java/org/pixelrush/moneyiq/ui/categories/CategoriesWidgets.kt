@@ -32,6 +32,11 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -103,8 +108,7 @@ internal fun CategoryChip(
                         .background(MaterialTheme.colorScheme.primary).padding(horizontal = 3.dp))
             }
         }
-        Text(category.name, style = typo.categoryTitle, color = colors.primaryText,
-            maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
+        CategoryCellLabel(category.name, style = typo.categoryTitle, color = colors.primaryText,
             modifier = Modifier.fillMaxWidth())
         Text(formatMoney(spending) + " ₴", style = typo.categoryBottomAmount,
             color = if (spending == 0.0) colors.secondaryText else colors.primaryText,
@@ -380,6 +384,59 @@ internal fun ExpandedCategoryStrip(
     }
 }
 
+// ── Підпис клітинки ─────────────────────────────────────────────────────────
+
+/** Найменший масштаб кеглю підпису клітинки відносно стилю теми. */
+internal const val CELL_LABEL_MIN_SCALE = 0.75f
+
+private val CELL_LABEL_WORD_SEPARATOR = Regex("\\s+")
+
+/**
+ * Підпис клітинки категорії (serg/tasks#2673): до двох рядків, перенос лише між словами.
+ * Якщо найдовше слово не влазить у ширину клітинки цілим, кегль зменшується пропорційно,
+ * але не нижче [minScale] від стилю. Масштаб рахується один раз на (текст, стиль, ширина) —
+ * без циклу перекомпоновок; ширину дає BoxWithConstraints, слова міряє TextMeasurer.
+ */
+@Composable
+internal fun CategoryCellLabel(
+    text:     String,
+    style:    TextStyle,
+    color:    Color,
+    modifier: Modifier = Modifier,
+    minScale: Float = CELL_LABEL_MIN_SCALE,
+) {
+    val measurer = rememberTextMeasurer()
+    BoxWithConstraints(modifier, contentAlignment = Alignment.TopCenter) {
+        val maxWidthPx = constraints.maxWidth
+        val scale = remember(text, style, maxWidthPx, minScale, measurer) {
+            cellLabelScale(measurer, text, style, maxWidthPx, minScale)
+        }
+        Text(text, style = style.scaledBy(scale).copy(hyphens = Hyphens.None), color = color,
+            maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth())
+    }
+}
+
+/** Масштаб кеглю, за якого найширше слово [text] вміщається в [maxWidthPx]; 1f — якщо вже вміщається. */
+internal fun cellLabelScale(
+    measurer: TextMeasurer, text: String, style: TextStyle, maxWidthPx: Int, minScale: Float,
+): Float {
+    // Ширина невідома (немає обмеження) — зменшувати нема відносно чого, лишаємо стиль як є.
+    if (maxWidthPx <= 0 || maxWidthPx == Constraints.Infinity) return 1f
+    val widest = text.split(CELL_LABEL_WORD_SEPARATOR).filter { it.isNotEmpty() }
+        .maxOfOrNull { word -> measurer.measure(word, style, softWrap = false, maxLines = 1).size.width }
+        ?: return 1f
+    if (widest <= maxWidthPx) return 1f
+    // Ширина слова майже лінійна від кеглю; 2% запасу — на округлення до пікселя.
+    return (maxWidthPx.toFloat() / widest * 0.98f).coerceIn(minScale, 1f)
+}
+
+private fun TextStyle.scaledBy(scale: Float): TextStyle = if (scale >= 1f) this else copy(
+    fontSize      = if (fontSize.isSp) fontSize * scale else fontSize,
+    lineHeight    = if (lineHeight.isSp) lineHeight * scale else lineHeight,
+    letterSpacing = if (letterSpacing.isSp) letterSpacing * scale else letterSpacing,
+)
+
 // ── Чип «Додати» ─────────────────────────────────────────────────────────────
 
 @Composable
@@ -395,8 +452,8 @@ internal fun AddCategoryChip(onClick: () -> Unit, circleSize: Dp = OneMoneyTheme
             contentAlignment = Alignment.Center) {
             Icon(Icons.Default.Add, null, tint = colors.addButtonIcon, modifier = Modifier.size(24.dp))
         }
-        Text(stringResource(R.string.categories_new), style = OneMoneyTheme.typography.categoryTitle,
-            color = colors.secondaryText, maxLines = 2, textAlign = TextAlign.Center)
+        CategoryCellLabel(stringResource(R.string.categories_new), style = OneMoneyTheme.typography.categoryTitle,
+            color = colors.secondaryText, modifier = Modifier.fillMaxWidth())
     }
 }
 
