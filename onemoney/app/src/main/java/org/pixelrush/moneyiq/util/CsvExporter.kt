@@ -92,15 +92,25 @@ object CsvExporter {
             val cols = listOf(
                 dateFmt.format(Date(tx.date)),
                 labels.types[tx.type] ?: tx.type.name,
-                amount,
-                tx.accountName,
-                tx.toAccountName ?: "",
-                tx.categoryName ?: "",
-                tx.note,
+                amount, // number we produce ourselves — never neutralised
+                tx.accountName.neutralizeFormula(),
+                (tx.toAccountName ?: "").neutralizeFormula(),
+                (tx.categoryName ?: "").neutralizeFormula(),
+                tx.note.neutralizeFormula(),
             )
             out.append(cols.joinToString(sep.toString()) { it.csvEscape(sep) }).append("\r\n")
         }
     }
+
+    /**
+     * CSV/formula injection: user text such as «=HYPERLINK(...)» would run as a
+     * formula when the file is opened in Excel/Sheets. A leading apostrophe makes
+     * the spreadsheet treat it as plain text (OWASP CSV Injection).
+     */
+    internal fun String.neutralizeFormula(): String =
+        if (isNotEmpty() && this[0] in FORMULA_PREFIXES) "'$this" else this
+
+    private val FORMULA_PREFIXES = charArrayOf('=', '+', '-', '@', '\t', '\r')
 
     /** RFC 4180: quote a field that holds the separator, a quote or a line break. */
     internal fun String.csvEscape(sep: Char): String =

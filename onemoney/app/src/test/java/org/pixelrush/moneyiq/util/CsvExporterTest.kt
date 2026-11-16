@@ -61,6 +61,24 @@ class CsvExporterTest {
     }
 
     @Test
+    fun `user text starting with formula characters is neutralised`() {
+        for (bad in listOf("=1+1", "+380", "-5", "@SUM(A1)", "\tx", "\rx")) {
+            val row = csv(Locale.US, tx(note = bad).copy(accountName = bad, categoryName = bad))[1]
+            // Every text cell begins with an apostrophe (quoted when it holds \r).
+            assertTrue(row, row.contains("'" + bad.take(1)))
+            assertTrue(row, !row.split(',').drop(3).any { it.startsWith(bad.take(1)) })
+        }
+        val row = csv(Locale.US, tx(note = "=HYPERLINK(\"x\")"))[1]
+        assertTrue(row, row.endsWith(",\"'=HYPERLINK(\"\"x\"\")\""))
+    }
+
+    @Test
+    fun `amount column is not neutralised`() {
+        val row = csv(Locale.US, tx(amount = -12.5))[1].split(',')
+        assertEquals("-12.50", row[2])
+    }
+
+    @Test
     fun `file uses Zerno brand and interface strings`() {
         val previous = Locale.getDefault()
         try {
