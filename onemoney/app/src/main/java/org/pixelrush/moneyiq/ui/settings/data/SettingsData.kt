@@ -10,25 +10,25 @@ val ACCENT_COLORS: List<Color> = listOf(
     Color(0xFFF44336), Color(0xFFE91E63), Color(0xFF795548)
 )
 
-val LANGUAGES: List<Pair<String, String>> = listOf(
-    "default" to "За замовчуванням",
-    "uk"      to "Українська",
-    "ru"      to "Русский",
-    "en"      to "English",
-    "de"      to "Deutsch",
-    "fr"      to "Français",
-    "pl"      to "Polski"
-)
+/**
+ * Пункти діалогу «Мова»: «За замовчуванням» (підпис підставляє екран із ресурсів) і мови
+ * з [tags] — список `R.array.app_language_tags` у res/values/languages.xml, який тримається
+ * поруч із ресурсами і містить лише мови з перекладом (#3037 R12).
+ */
+fun languageOptions(tags: List<String>): List<Pair<String, String>> =
+    listOf(LANGUAGE_DEFAULT to "") + tags.map { it to languageNativeName(it) }
 
-val DAYS_OF_WEEK: List<Pair<Int, String>> = listOf(
-    1 to "Неділя",
-    2 to "Понеділок",
-    3 to "Вівторок",
-    4 to "Середа",
-    5 to "Четвер",
-    6 to "П'ятниця",
-    7 to "Субота"
-)
+const val LANGUAGE_DEFAULT = "default"
+
+/** Назва мови її ж мовою («Українська», «English»); невідомий тег — через Locale. */
+fun languageNativeName(tag: String): String = when (tag) {
+    "uk" -> "Українська"
+    "ru" -> "Русский"
+    "en" -> "English"
+    else -> java.util.Locale.forLanguageTag(tag).let { l ->
+        l.getDisplayLanguage(l).replaceFirstChar { it.titlecase(l) }.ifEmpty { tag }
+    }
+}
 
 val CURRENCY_FORMAT_EXAMPLES: List<String> = listOf(
     "−1.234.567,90 UAH",
