@@ -137,6 +137,7 @@
     <!-- Categories -->
     <string name="common_back">Назад</string>
     <string name="cat_from_category">З категорії</string>
+    <string name="cat_type_inherited">Як у батьківської категорії</string>
     <string name="cat_edit_categories">Редагувати категорії</string>
     <string name="cat_edit_subcategories">Редагувати субкатегорії</string>
     <string name="cat_subcategories">Підкатегорії</string>

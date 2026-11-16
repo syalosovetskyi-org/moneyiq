@@ -132,6 +132,7 @@
     <!-- Categories -->
     <string name="common_back">Back</string>
     <string name="cat_from_category">From category</string>
+    <string name="cat_type_inherited">Same as the parent category</string>
     <string name="cat_edit_categories">Edit categories</string>
     <string name="cat_edit_subcategories">Edit subcategories</string>
     <string name="cat_subcategories">Subcategories</string>

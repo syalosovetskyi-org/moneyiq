@@ -132,6 +132,7 @@
     <!-- Categories -->
     <string name="common_back">Назад</string>
     <string name="cat_from_category">Из категории</string>
+    <string name="cat_type_inherited">Как у родительской категории</string>
     <string name="cat_edit_categories">Редактировать категории</string>
     <string name="cat_edit_subcategories">Редактировать субкатегории</string>
     <string name="cat_subcategories">Подкатегории</string>
