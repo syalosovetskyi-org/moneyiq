@@ -301,4 +301,61 @@ class SelectedMonthRepositoryTest {
             java.util.TimeZone.setDefault(previous)
         }
     }
+
+    // ── Налаштування «Перший день тижня / місяця» (#3037 R11) ────────────────
+
+    @Test
+    fun `first day of month setting shifts MONTH range and day count`() {
+        val previous = java.util.TimeZone.getDefault()
+        try {
+            java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Europe/Kyiv"))
+            val zone = java.time.ZoneId.of("Europe/Kyiv")
+            repo.applyPeriodSettings(Calendar.MONDAY, 25)
+            repo.goToMonth(2026, Calendar.NOVEMBER)
+            val am = repo.month.value
+            assertEquals(25, am.firstDayOfMonth)
+            val (from, to) = repo.computeRange(am)
+            assertEquals(java.time.LocalDate.of(2026, 11, 25).atStartOfDay(zone).toInstant().toEpochMilli(), from)
+            assertEquals(java.time.LocalDate.of(2026, 12, 25).atStartOfDay(zone).toInstant().toEpochMilli() - 1, to)
+            assertEquals(30, repo.daysInPeriod(am))
+        } finally {
+            java.util.TimeZone.setDefault(previous)
+        }
+    }
+
+    @Test
+    fun `settings are kept when navigating and setting period`() {
+        repo.applyPeriodSettings(Calendar.SUNDAY, 10)
+        repo.goToMonth(2026, 4)
+        repo.nextMonth()
+        assertEquals(10, repo.month.value.firstDayOfMonth)
+        assertEquals(Calendar.SUNDAY, repo.month.value.firstDayOfWeek)
+        repo.prevMonth()
+        assertEquals(10, repo.month.value.firstDayOfMonth)
+        repo.setPeriod(AppMonth(2026, 4, PeriodMode.WEEK))
+        assertEquals(Calendar.SUNDAY, repo.month.value.firstDayOfWeek)
+    }
+
+    @Test
+    fun `changing settings re-emits selected month so view models recompute`() {
+        repo.goToMonth(2025, 3)
+        val before = repo.month.value
+        repo.applyPeriodSettings(Calendar.MONDAY, 5)
+        val after = repo.month.value
+        assertTrue(before != after)
+        assertEquals(2025, after.year)
+        assertEquals(3, after.month)
+        assertEquals(5, after.firstDayOfMonth)
+    }
+
+    @Test
+    fun `WEEK range starts on configured first day of week`() {
+        repo.applyPeriodSettings(Calendar.SUNDAY, 1)
+        repo.setPeriod(AppMonth(2026, 10, PeriodMode.WEEK))
+        val (from, to) = repo.computeRange(repo.month.value)
+        val start = java.time.Instant.ofEpochMilli(from).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+        assertEquals(java.time.DayOfWeek.SUNDAY, start.dayOfWeek)
+        val end = java.time.Instant.ofEpochMilli(to).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+        assertEquals(start.plusDays(6), end)
+    }
 }
