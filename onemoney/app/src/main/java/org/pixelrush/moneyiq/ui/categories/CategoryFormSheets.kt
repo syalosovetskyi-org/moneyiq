@@ -483,7 +483,7 @@ fun CategoryFormSheet(
 // ── Пікер батьківської категорії (для зміни батька підкатегорії) ──────────────
 
 @Composable
-private fun ParentPickerDialog(
+internal fun ParentPickerDialog(
     options:       List<CategoryEntity>,
     currentParent: Long?,
     onSelect:      (Long?) -> Unit,
