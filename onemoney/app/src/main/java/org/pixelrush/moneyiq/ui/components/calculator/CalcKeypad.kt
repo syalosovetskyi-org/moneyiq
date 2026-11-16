@@ -60,7 +60,7 @@ private fun QKey(
 fun SharedCalcKeypad(
     calc:            CalcStateHolder,
     modifier:        Modifier = Modifier,
-    currencySymbol:  String   = "₴",
+    currencySymbol:  String   = org.syalosovetskyi.onemoney.util.REPORTING_CURRENCY_SYMBOL,
     confirmColor:    Color    = CalcConfirmColor,
     onConfirm:       () -> Unit,
     onCurrencyClick: (() -> Unit)? = null,
@@ -211,7 +211,7 @@ fun SharedCalcKeypad(
 @Composable
 fun AmountCalculatorSheet(
     initial:        Double = 0.0,
-    currencySymbol: String = "₴",
+    currencySymbol: String = org.syalosovetskyi.onemoney.util.REPORTING_CURRENCY_SYMBOL,
     title:          String? = null,
     onResult:       (Double) -> Unit,
     onDismiss:      () -> Unit

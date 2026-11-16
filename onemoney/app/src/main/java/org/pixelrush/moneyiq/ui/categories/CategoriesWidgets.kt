@@ -46,7 +46,12 @@ import java.text.NumberFormat
 import java.util.Locale
 import org.syalosovetskyi.onemoney.data.db.entities.CategoryEntity
 import org.syalosovetskyi.onemoney.data.db.entities.TransactionType
-import org.syalosovetskyi.onemoney.util.formatMoney
+import org.syalosovetskyi.onemoney.util.formatBase
+import org.syalosovetskyi.onemoney.util.formatMoneyCompact
+import org.syalosovetskyi.onemoney.util.REPORTING_CURRENCY
+import org.syalosovetskyi.onemoney.ui.accounts.currencySymbol
+import org.syalosovetskyi.onemoney.ui.components.text.FitAmountText
+import org.syalosovetskyi.onemoney.ui.components.text.compactSuffixes
 import org.syalosovetskyi.onemoney.ui.theme.CategoryScreenTokens
 import org.syalosovetskyi.onemoney.ui.theme.Spacing
 import org.syalosovetskyi.onemoney.ui.theme.OneMoneyTheme
@@ -110,14 +115,16 @@ internal fun CategoryChip(
         }
         CategoryCellLabel(category.name, style = typo.categoryTitle, color = colors.primaryText,
             modifier = Modifier.fillMaxWidth())
-        Text(formatMoney(spending) + " ₴", style = typo.categoryBottomAmount,
+        // R4: сума не обрізається — зменшений кегль або «1,2 млн ₴», але не «1 234 567,…».
+        FitAmountText(formatBase(spending), style = typo.categoryBottomAmount,
             color = if (spending == 0.0) colors.secondaryText else colors.primaryText,
-            maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
+            compactText = formatMoneyCompact(spending, REPORTING_CURRENCY, compactSuffixes()),
             modifier = Modifier.fillMaxWidth().testTag("category_amount_${category.id}"))
         if (budget > 0.0) {
-            Text(formatBudgetAmount(budget - spending) + " ₴", style = typo.categoryTopAmount,
+            FitAmountText(withBaseSymbol(formatBudgetAmount(budget - spending)), style = typo.categoryTopAmount,
                 color = if (spending > budget) colors.expenseRed else colors.secondaryText,
-                maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+                compactText = formatMoneyCompact(budget - spending, REPORTING_CURRENCY, compactSuffixes()),
+                modifier = Modifier.fillMaxWidth())
         }
     }
 }
@@ -195,12 +202,15 @@ internal fun SideSubcategoryPanel(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        Text(
-                            formatMoney(childSpend) + " ₴",
-                            style      = typo.subcategoryAmount,
-                            color      = if (childSpend > 0) OneMoneyTheme.colors.primaryText
-                                         else OneMoneyTheme.colors.secondaryText,
-                            maxLines   = 1
+                        FitAmountText(
+                            formatBase(childSpend),
+                            style            = typo.subcategoryAmount,
+                            color            = if (childSpend > 0) OneMoneyTheme.colors.primaryText
+                                               else OneMoneyTheme.colors.secondaryText,
+                            compactText      = formatMoneyCompact(childSpend, REPORTING_CURRENCY, compactSuffixes()),
+                            textAlign        = TextAlign.Start,
+                            contentAlignment = Alignment.CenterStart,
+                            modifier         = Modifier.fillMaxWidth()
                         )
                     }
                     if (hasBudget) {
@@ -215,7 +225,7 @@ internal fun SideSubcategoryPanel(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                formatBudgetAmount(kotlin.math.abs(remainingBudget)) + " ₴",
+                                withBaseSymbol(formatBudgetAmount(kotlin.math.abs(remainingBudget))),
                                 style      = typo.subcategoryAmount.copy(fontSize = 12.sp, lineHeight = 16.sp),
                                 fontWeight = FontWeight.Medium,
                                 color      = if (overBudget) {
@@ -290,7 +300,7 @@ internal fun ExpandedCategoryStrip(
                     )
                     if (parentSpend > 0.0) {
                         Text(
-                            formatMoney(parentSpend) + " ₴",
+                            formatBase(parentSpend),
                             style      = MaterialTheme.typography.bodySmall,
                             color      = parentColor,
                             fontWeight = FontWeight.SemiBold
@@ -350,13 +360,12 @@ internal fun ExpandedCategoryStrip(
                         textAlign = TextAlign.Center,
                         modifier  = Modifier.fillMaxWidth()
                     )
-                    Text(
-                        formatMoney(childSpend) + " ₴",
-                        style      = OneMoneyTheme.typography.subcategoryAmount,
-                        color      = if (childSpend > 0) OneMoneyTheme.colors.primaryText else OneMoneyTheme.colors.secondaryText,
-                        maxLines   = 1,
-                        textAlign  = TextAlign.Center,
-                        modifier   = Modifier.fillMaxWidth()
+                    FitAmountText(
+                        formatBase(childSpend),
+                        style       = OneMoneyTheme.typography.subcategoryAmount,
+                        color       = if (childSpend > 0) OneMoneyTheme.colors.primaryText else OneMoneyTheme.colors.secondaryText,
+                        compactText = formatMoneyCompact(childSpend, REPORTING_CURRENCY, compactSuffixes()),
+                        modifier    = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -457,6 +466,9 @@ internal fun AddCategoryChip(onClick: () -> Unit, circleSize: Dp = OneMoneyTheme
     }
 }
 
+/** Число + знак валюти звітності (R10): «₴» не зашивається, а береться з коду валюти. */
+private fun withBaseSymbol(number: String): String = "$number ${currencySymbol(REPORTING_CURRENCY)}"
+
 private fun formatBudgetAmount(amount: Double): String {
     val nf = NumberFormat.getNumberInstance(Locale.getDefault())
     nf.maximumFractionDigits = 0
@@ -498,7 +510,9 @@ internal fun DonutChart(
             parseColorHex(cat.colorHex, FallbackCategoryColor), false, dark).circleBg
     }
     val label = stringResource(if (selectedTab == 0) R.string.common_expenses else R.string.common_incomes)
-    val amount = formatMoney(if (selectedTab == 0) totalExpense else totalIncome) + " ₴"
+    val centerValue = if (selectedTab == 0) totalExpense else totalIncome
+    val amount = formatBase(centerValue)
+    val compactAmount = formatMoneyCompact(centerValue, REPORTING_CURRENCY, compactSuffixes())
     Box(modifier = modifier.clickable(onClick = onToggle).semantics(mergeDescendants = true) { contentDescription = "$label: $amount" }, contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.sizeIn(maxWidth = 200.dp, maxHeight = 240.dp).fillMaxSize()) {
             val minDim = size.minDimension
@@ -545,9 +559,9 @@ internal fun DonutChart(
                 style      = typo.centerTitle.copy(letterSpacing = 0.sp),
                 color      = MaterialTheme.colorScheme.onSurface
             )
-            Text(amount, style = typo.centerAmount.copy(letterSpacing = 0.sp),
+            FitAmountText(amount, style = typo.centerAmount.copy(letterSpacing = 0.sp),
                 color = if (tabTotal == 0.0) colors.secondaryText else if (selectedTab == 0) expenseColor else incomeColor,
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                compactText = compactAmount)
 
         }
     }

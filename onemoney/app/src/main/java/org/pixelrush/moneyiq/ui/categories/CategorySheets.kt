@@ -49,7 +49,7 @@ import org.syalosovetskyi.onemoney.data.db.entities.CategoryEntity
 import org.syalosovetskyi.onemoney.data.db.entities.TransactionType
 import org.syalosovetskyi.onemoney.ui.components.currency.CurrencyBottomSheet
 import org.syalosovetskyi.onemoney.ui.components.calculator.*
-import org.syalosovetskyi.onemoney.util.formatMoney
+import org.syalosovetskyi.onemoney.util.formatBase
 import org.syalosovetskyi.onemoney.ui.settings.data.CURRENCIES_ALL
 import org.syalosovetskyi.onemoney.ui.theme.Spacing
 import org.syalosovetskyi.onemoney.ui.theme.OneMoneyTheme
@@ -131,7 +131,7 @@ fun CategoryActionSheet(
                         )
                         Spacer(Modifier.weight(1f))
                         Text(
-                            "${formatMoney(spending)} ₴",
+                            formatBase(spending),
                             color      = onCatColor,
                             fontWeight = FontWeight.Bold,
                             style      = MaterialTheme.typography.titleLarge
@@ -173,7 +173,7 @@ fun CategoryActionSheet(
                         )
                         Spacer(Modifier.weight(1f))
                         Text(
-                            "${formatMoney(totalInPeriod)} ₴",
+                            formatBase(totalInPeriod),
                             color      = onCatColor.copy(0.8f),
                             fontWeight = FontWeight.Medium,
                             style      = MaterialTheme.typography.bodyMedium

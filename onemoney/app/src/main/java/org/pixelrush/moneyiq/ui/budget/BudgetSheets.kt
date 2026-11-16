@@ -30,6 +30,8 @@ import androidx.compose.ui.window.DialogProperties
 import org.syalosovetskyi.onemoney.ui.components.calculator.SharedCalcKeypad
 import org.syalosovetskyi.onemoney.ui.components.calculator.rememberCalcState
 import org.syalosovetskyi.onemoney.util.formatMoney
+import org.syalosovetskyi.onemoney.util.formatBase
+import org.syalosovetskyi.onemoney.util.REPORTING_CURRENCY
 import org.syalosovetskyi.onemoney.ui.components.currency.CurrencyPageContent
 import org.syalosovetskyi.onemoney.ui.components.icons.CircleIconBox
 import org.syalosovetskyi.onemoney.ui.settings.data.CURRENCIES_ALL
@@ -63,11 +65,19 @@ internal fun BudgetInputSheet(
 
     val calc           = rememberCalcState(catRow.category.budgetAmount)
     val displayText    = calc.displayExpr(currencySymbol)
-    val budgetProgress = if (catRow.category.budgetAmount > 0.0) {
-        (catRow.amount / catRow.category.budgetAmount).toFloat().coerceIn(0f, 1f)
+    val plan           = catRow.budgetForPeriod
+    val budgetProgress = if (plan > 0.0) {
+        (catRow.amount / plan).toFloat().coerceIn(0f, 1f)
     } else {
         0f
     }
+    // R8: перевитрату видно явно — червона пілюля «перевитрата −X» і червона смуга прогресу.
+    // Без плану (0) відхилення не рахуємо: «перевитрати» бюджету, якого немає, не буває.
+    val deviation  = if (plan > 0.0) {
+        budgetDeviation(catRow.category.type == org.syalosovetskyi.onemoney.data.db.entities.TransactionType.INCOME, plan, catRow.amount)
+    } else null
+    val overspent  = deviation?.kind == BudgetDeviationKind.OVERSPENT
+    val errorColor = MaterialTheme.colorScheme.error
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -107,25 +117,31 @@ internal fun BudgetInputSheet(
                         Text(monthLabel,
                             style = MaterialTheme.typography.bodyMedium,
                             color = onCatColor.copy(alpha = 0.9f))
-                        Text("${amountLabel ?: stringResource(R.string.budget_spent)} ${formatMoney(catRow.amount)} ₴",
+                        Text("${amountLabel ?: stringResource(R.string.budget_spent)} ${formatBase(catRow.amount)}",
                             style = MaterialTheme.typography.labelSmall,
                             color = onCatColor.copy(alpha = 0.7f))
                     }
                     Column(horizontalAlignment = Alignment.End) {
+                        // Пілюля — відхилення від плану (а не дубль «витрачено» зліва):
+                        // залишок, «перевитрата −X» або «+X» для доходу понад план.
                         Surface(
                             shape = RoundedCornerShape(50),
-                            color = onCatColor.copy(alpha = 0.15f)
+                            color = if (overspent) errorColor else onCatColor.copy(alpha = 0.15f)
                         ) {
                             Text(
-                                "${formatMoney(catRow.amount)} ₴",
+                                deviation?.let { d ->
+                                    if (overspent) stringResource(R.string.budget_overspend) + " " + d.signedText(REPORTING_CURRENCY)
+                                    else d.signedText(REPORTING_CURRENCY)
+                                } ?: formatBase(catRow.amount),
                                 modifier   = Modifier.padding(horizontal = 10.dp, vertical = Spacing.xs),
                                 style      = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
-                                color      = onCatColor
+                                color      = if (overspent) MaterialTheme.colorScheme.onError else onCatColor
                             )
                         }
                         Spacer(Modifier.height(2.dp))
-                        Text(stringResource(R.string.budget_in_budget, formatMoney(catRow.category.budgetAmount)),
+                        Text(stringResource(R.string.budget_in_budget,
+                                formatMoney(catRow.category.budgetAmount, catRow.category.currencyCode)),
                             style = MaterialTheme.typography.labelSmall,
                             color = onCatColor.copy(alpha = 0.7f))
                     }
@@ -140,7 +156,7 @@ internal fun BudgetInputSheet(
                         .padding(horizontal = Spacing.xl)
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp)),
-                    color      = onCatColor,
+                    color      = if (overspent) errorColor else onCatColor,
                     trackColor = onCatColor.copy(alpha = 0.25f)
                 )
 
@@ -263,7 +279,7 @@ internal fun IncomeCategoryPickerSheet(
                     headlineContent = { Text(row.category.name) },
                     supportingContent = {
                         Text(
-                            "${stringResource(R.string.budget_received)} ${formatMoney(row.amount)} ₴",
+                            "${stringResource(R.string.budget_received)} ${formatBase(row.amount)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = if (row.amount > 0) catColor
                                     else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
@@ -273,7 +289,7 @@ internal fun IncomeCategoryPickerSheet(
                         if (row.category.budgetAmount > 0) {
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
-                                    "${formatMoney(row.category.budgetAmount)} ₴",
+                                    formatMoney(row.category.budgetAmount, row.category.currencyCode),
                                     style      = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold,
                                     color      = accentColor

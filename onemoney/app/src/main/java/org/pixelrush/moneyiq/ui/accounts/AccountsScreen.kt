@@ -461,7 +461,8 @@ private fun MyFinancesTab(
 ) {
     val totals = org.syalosovetskyi.onemoney.util.accountCurrencyTotals(state.accounts)
     val totalAssets = totals.entries.joinToString("\n") { (currency, total) -> formatMoney(total.assets, currency) }
-    val totalDebts = totals.entries.joinToString("\n") { (currency, total) -> formatMoney(total.debts, currency) }
+    // debts — додатна величина боргу (R3); у колонці «Борги» показуємо її зі знаком мінус.
+    val totalDebts = totals.entries.joinToString("\n") { (currency, total) -> formatMoney(-total.debts, currency) }
     val netText = totals.entries.joinToString("\n") { (currency, total) -> formatMoney(total.net, currency) }
     val hasDebt = totals.values.any { it.net < 0 }
 

@@ -22,7 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.syalosovetskyi.onemoney.R
-import org.syalosovetskyi.onemoney.util.formatMoney
+import org.syalosovetskyi.onemoney.util.formatBase
 
 // ── Category detail bottom sheet ──────────────────────────────────────────────
 
@@ -34,6 +34,14 @@ internal fun CategoryDetailSheet(
     onAddExpense: () -> Unit,
     onOperations: () -> Unit
 ) {
+    // R8: з бюджетом прогрес і відсоток рахуються від бюджету, а перевитрата видна явно —
+    // червона смуга й пілюля «перевитрата −X». Без бюджету — як раніше, частка від найбільшої категорії.
+    val hasBudget = cat.budgetAmount > 0.0
+    val overspend = if (hasBudget) cat.amount - cat.budgetAmount else 0.0
+    val overspent = overspend > 0.0
+    val progress  = if (hasBudget) (cat.amount / cat.budgetAmount).toFloat().coerceIn(0f, 1f) else cat.percent
+    val percent   = if (hasBudget) Math.round(cat.amount / cat.budgetAmount * 100).toInt() else (cat.percent * 100).toInt()
+    val errorColor = MaterialTheme.colorScheme.error
     Box(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // Space for floating icon (top half in drag handle, bottom half in content)
@@ -66,7 +74,7 @@ internal fun CategoryDetailSheet(
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    formatMoney(cat.amount),
+                    formatBase(cat.amount),
                     style      = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color      = Color.White
@@ -77,13 +85,13 @@ internal fun CategoryDetailSheet(
 
             // Budget progress bar
             LinearProgressIndicator(
-                progress   = { cat.percent },
+                progress   = { progress },
                 modifier   = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
                     .height(3.dp)
                     .clip(CircleShape),
-                color      = Color.White,
+                color      = if (overspent) errorColor else Color.White,
                 trackColor = Color.White.copy(alpha = 0.25f)
             )
 
@@ -97,12 +105,22 @@ internal fun CategoryDetailSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "${(cat.percent * 100).toInt()}%",
+                    "$percent%",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.7f),
                     modifier = Modifier.weight(1f)
                 )
-                // budget or month label
+                if (overspent) {
+                    Surface(shape = CircleShape, color = errorColor) {
+                        Text(
+                            stringResource(R.string.budget_overspend) + " " + formatBase(-overspend),
+                            modifier   = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            style      = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color      = MaterialTheme.colorScheme.onError
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(2.dp))
@@ -119,12 +137,15 @@ internal fun CategoryDetailSheet(
                     color    = Color.White.copy(alpha = 0.75f),
                     modifier = Modifier.weight(1f)
                 )
-                Text(
-                    formatMoney(cat.budgetAmount),
-                    style      = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color      = Color.White
-                )
+                if (hasBudget) {
+                    // Підпис, що це бюджет, а не ще одна сума витрат.
+                    Text(
+                        stringResource(R.string.ovr_in_budget) + " " + formatBase(cat.budgetAmount),
+                        style      = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color      = Color.White
+                    )
+                }
             }
 
             Spacer(Modifier.height(20.dp))

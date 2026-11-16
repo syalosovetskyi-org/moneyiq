@@ -33,6 +33,11 @@ import org.syalosovetskyi.onemoney.data.db.entities.TransactionType
 import org.syalosovetskyi.onemoney.ui.accounts.accountTypeIcon
 import org.syalosovetskyi.onemoney.ui.categories.categoryIconFor
 import org.syalosovetskyi.onemoney.util.formatMoney
+import org.syalosovetskyi.onemoney.util.formatBase
+import org.syalosovetskyi.onemoney.util.formatMoneyCompact
+import org.syalosovetskyi.onemoney.util.REPORTING_CURRENCY
+import org.syalosovetskyi.onemoney.ui.components.text.FitAmountText
+import org.syalosovetskyi.onemoney.ui.components.text.compactSuffixes
 import org.syalosovetskyi.onemoney.ui.accounts.currencySymbol
 import org.syalosovetskyi.onemoney.ui.theme.Spacing
 import org.syalosovetskyi.onemoney.ui.theme.OneMoneyTheme
@@ -258,14 +263,15 @@ internal fun CategoryPickerCell(
             )
         }
         Spacer(Modifier.height(4.dp))
-        Text(
-            "${formatMoney(amount)} ₴",
-            style      = MaterialTheme.typography.labelSmall,
-            fontWeight = if (hasSpending) FontWeight.Bold else FontWeight.Normal,
-            color      = if (hasSpending) catColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-            textAlign  = TextAlign.Center,
-            modifier   = Modifier.fillMaxWidth(),
-            maxLines   = 1
+        // R4: у вузькій клітинці (¼ екрана) на шрифті 1.3 сума раніше мовчки обрізалась
+        // («1 234 567,8»); тепер — зменшений кегль або «1,2 млн ₴», але число завжди ціле.
+        FitAmountText(
+            formatBase(amount),
+            style       = MaterialTheme.typography.labelSmall.copy(
+                              fontWeight = if (hasSpending) FontWeight.Bold else FontWeight.Normal),
+            color       = if (hasSpending) catColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+            compactText = formatMoneyCompact(amount, REPORTING_CURRENCY, compactSuffixes()),
+            modifier    = Modifier.fillMaxWidth()
         )
     }
 }

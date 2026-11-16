@@ -56,6 +56,7 @@ import org.syalosovetskyi.onemoney.ui.settings.data.CURRENCIES_CRYPTO
 import org.syalosovetskyi.onemoney.ui.settings.data.CURRENCIES_MAIN
 import org.syalosovetskyi.onemoney.ui.settings.data.CURRENCIES_OTHER
 import org.syalosovetskyi.onemoney.util.suggestCategoryStyle
+import org.syalosovetskyi.onemoney.util.formatMoney
 import org.syalosovetskyi.onemoney.ui.theme.Spacing
 import org.syalosovetskyi.onemoney.ui.theme.OneMoneyTheme
 import org.syalosovetskyi.onemoney.ui.theme.FallbackCategoryColor
@@ -260,7 +261,7 @@ fun CategoryFormSheet(
                         headlineContent  = { Text(stringResource(R.string.cat_budget)) },
                         supportingContent = {
                             Text(
-                                if (budgetNum > 0.0) "$budget ₴ / ${if (period == "MONTHLY") stringResource(R.string.cat_month) else stringResource(R.string.cat_week)}"
+                                if (budgetNum > 0.0) "${formatMoney(budgetNum, currencyCode)} / ${if (period == "MONTHLY") stringResource(R.string.cat_month) else stringResource(R.string.cat_week)}"
                                 else stringResource(R.string.cat_no_limit),
                                 color = if (budgetNum > 0.0) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                                         else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)

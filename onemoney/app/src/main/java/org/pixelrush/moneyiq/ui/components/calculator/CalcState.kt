@@ -42,7 +42,7 @@ class CalcStateHolder(initial: Double = 0.0) {
             currentStr
     }
 
-    fun displayExpr(symbol: String = "₴"): String =
+    fun displayExpr(symbol: String = org.syalosovetskyi.onemoney.util.REPORTING_CURRENCY_SYMBOL): String =
         "${displayExprNoSymbol()} $symbol"
 
     fun onKey(key: String) {

@@ -33,6 +33,7 @@ import org.syalosovetskyi.onemoney.data.db.entities.CategoryEntity
 import org.syalosovetskyi.onemoney.data.db.entities.TransactionType
 import org.syalosovetskyi.onemoney.ui.main.SharedMonthNavPill
 import org.syalosovetskyi.onemoney.util.formatMoney
+import org.syalosovetskyi.onemoney.util.formatBase
 import org.syalosovetskyi.onemoney.ui.main.horizontalSwipe
 import org.syalosovetskyi.onemoney.ui.categories.categoryIconFor
 import org.syalosovetskyi.onemoney.ui.theme.OneMoneyTheme
@@ -220,7 +221,6 @@ private fun BudgetSectionCard(
     val visibleChips    = if (expanded) chipRows else chipRows.take(3)
     val hasMoreChips    = chipRows.size > 3
     val hiddenChipTotal = chipRows.drop(3).sumOf { it.amount }
-    val remaining       = data.totalBudget - data.totalAmount
 
     editingRow?.let { row ->
         BudgetInputSheet(
@@ -275,22 +275,25 @@ private fun BudgetSectionCard(
                     Text(title,
                         style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface)
+                    // R9: дохід понад план — позитивне відхилення «+…», а не червоний «−…».
+                    val deviation = budgetDeviation(incomeMode, data.totalBudget, data.totalAmount)
                     Text(
-                        "${formatMoney(remaining)} ₴",
+                        deviation.signedText(org.syalosovetskyi.onemoney.util.REPORTING_CURRENCY),
                         style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
-                        color = when {
-                            remaining < 0   -> MaterialTheme.colorScheme.error
-                            remaining > 0   -> accentColor
-                            else            -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = when (deviation.kind) {
+                            BudgetDeviationKind.OVERSPENT  -> MaterialTheme.colorScheme.error
+                            BudgetDeviationKind.ABOVE_PLAN,
+                            BudgetDeviationKind.REMAINING  -> accentColor
+                            BudgetDeviationKind.ON_PLAN    -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         }
                     )
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("$amountLabel ${formatMoney(data.totalAmount)}",
+                    Text("$amountLabel ${formatBase(data.totalAmount)}",
                         style = MaterialTheme.typography.labelSmall,
                         color = if (data.totalAmount > 0) accentColor
                                 else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f))
-                    Text(stringResource(R.string.budget_in_budget, formatMoney(data.totalBudget)),
+                    Text(stringResource(R.string.budget_in_budget, formatBase(data.totalBudget)),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f))
                 }
@@ -409,7 +412,7 @@ private fun BudgetCatFullRow(
             }
             Spacer(Modifier.height(3.dp))
             Text(
-                "${formatMoney(row.amount)} ₴",
+                formatBase(row.amount),
                 style      = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color      = color
@@ -437,7 +440,7 @@ private fun BudgetCatFullRow(
                     color = accentColor
                 ) {
                     Text(
-                        "${formatMoney(-remaining)} ₴",
+                        formatBase(-remaining),
                         modifier   = Modifier.padding(horizontal = Spacing.sm, vertical = 3.dp),
                         style      = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
@@ -446,7 +449,7 @@ private fun BudgetCatFullRow(
                 }
             } else {
                 Text(
-                    "${formatMoney(remaining)} ₴",
+                    formatBase(remaining),
                     style      = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color      = accentColor
@@ -460,7 +463,7 @@ private fun BudgetCatFullRow(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
                 )
                 Text(
-                    "${formatMoney(row.budgetForPeriod)} ₴",
+                    formatMoney(row.budgetForPeriod, row.category.currencyCode),
                     style      = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color      = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
@@ -516,7 +519,7 @@ private fun BudgetCatChip(
         }
         Spacer(Modifier.height(Spacing.xs))
         Text(
-            "${formatMoney(row.amount)} ₴",
+            formatBase(row.amount),
             style      = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             color      = color,
@@ -566,7 +569,7 @@ private fun MoreLessChip(expanded: Boolean, hiddenTotal: Double = 0.0, onClick: 
         }
         Spacer(Modifier.height(Spacing.xs))
         Text(
-            if (!expanded && hiddenTotal > 0.0) "${formatMoney(hiddenTotal)} ₴" else " ",
+            if (!expanded && hiddenTotal > 0.0) formatBase(hiddenTotal) else " ",
             style      = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             color      = onSurfVar,
@@ -645,7 +648,7 @@ private fun SavingsSectionCard(
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
-                            "${formatMoney(headerAmount)} ₴",
+                            formatBase(headerAmount),
                             style      = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color      = headerColor
@@ -668,7 +671,7 @@ private fun SavingsSectionCard(
                 ) {
                     if (incomeTotal > 0) {
                         Text(
-                            stringResource(R.string.budget_saved, formatMoney(realSavings)),
+                            stringResource(R.string.budget_saved, formatBase(realSavings)),
                             style = MaterialTheme.typography.labelSmall,
                             color = if (realSavings >= 0) savingsColor.copy(alpha = 0.8f)
                                     else negColor.copy(alpha = 0.8f)
@@ -678,13 +681,13 @@ private fun SavingsSectionCard(
                     }
                     if (hasForecast && expenseTotal > 0) {
                         Text(
-                            stringResource(R.string.budget_spent_to_end, formatMoney(projectedExpenses)),
+                            stringResource(R.string.budget_spent_to_end, formatBase(projectedExpenses)),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
                         )
                     } else if (budgetSavings != 0.0 && incomeBudget > 0) {
                         Text(
-                            stringResource(R.string.budget_in_budget, formatMoney(incomeBudget)),
+                            stringResource(R.string.budget_in_budget, formatBase(incomeBudget)),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
                         )
@@ -740,7 +743,7 @@ private fun IncomeBudgetBar(
                             color     = overspendColor
                         )
                         Text(
-                            "${formatMoney(overspend)} ₴",
+                            formatBase(overspend),
                             style      = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color      = overspendColor
@@ -750,7 +753,7 @@ private fun IncomeBudgetBar(
                 hasBudget -> {
                     val available = effectiveIncomeBudget - expenseTotal
                     Text(
-                        stringResource(R.string.budget_available, formatMoney(available)),
+                        stringResource(R.string.budget_available, formatBase(available)),
                         style      = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         textAlign  = TextAlign.Center,

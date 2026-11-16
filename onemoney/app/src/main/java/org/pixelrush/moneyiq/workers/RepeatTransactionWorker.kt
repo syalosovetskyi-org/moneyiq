@@ -23,6 +23,8 @@ import org.syalosovetskyi.onemoney.data.db.entities.TransactionType
 import org.syalosovetskyi.onemoney.util.calculateNextRepeatDate
 import org.syalosovetskyi.onemoney.util.reminderOffsetDays
 import org.syalosovetskyi.onemoney.util.startOfDay
+import org.syalosovetskyi.onemoney.util.formatMoney
+import org.syalosovetskyi.onemoney.util.REPORTING_CURRENCY
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
@@ -64,7 +66,15 @@ class RepeatTransactionWorker(
                 if (offsetDays < 0) continue
                 val reminderDate = startOfDay(nextDate) - offsetDays * 86_400_000L
                 if (startOfDay(reminderDate) == today) {
-                    sendReminderNotification(applicationContext, tx.note, tx.amount, nextDate, tx.id.toInt())
+                    // R10: знак валюти — з рахунку операції, а не зашитий «₴».
+                    val currency = accDao.getAccountById(tx.accountId)?.currency ?: run {
+                        // Рахунок видалено, а операція з нагадуванням лишилась: нагадування все одно
+                        // шлемо, але у валюті звітності — і лишаємо слід, чому валюта не з рахунку.
+                        Log.w("RepeatTransactionWorker",
+                            "нагадування для операції ${tx.id}: рахунок ${tx.accountId} не знайдено, валюта $REPORTING_CURRENCY")
+                        REPORTING_CURRENCY
+                    }
+                    sendReminderNotification(applicationContext, tx.note, tx.amount, currency, nextDate, tx.id.toInt())
                 }
             }
 
@@ -81,6 +91,7 @@ class RepeatTransactionWorker(
         context:  Context,
         note:     String,
         amount:   Double,
+        currency: String,
         date:     Long,
         notifId:  Int
     ) {
@@ -89,7 +100,7 @@ class RepeatTransactionWorker(
         createReminderChannel(context)
         val fmt   = java.text.SimpleDateFormat("d MMM", java.util.Locale.getDefault())
         val title = if (note.isNotBlank()) note else "Повторна транзакція"
-        val text  = "${String.format("%.2f", amount)} ₴ · ${fmt.format(java.util.Date(date))}"
+        val text  = "${formatMoney(amount, currency)} · ${fmt.format(java.util.Date(date))}"
         val notif = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)

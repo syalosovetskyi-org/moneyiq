@@ -62,6 +62,10 @@ import org.syalosovetskyi.onemoney.ui.theme.Spacing
 import org.syalosovetskyi.onemoney.ui.transactions.TransactionsListScreen
 import org.syalosovetskyi.onemoney.util.DateFormats
 import org.syalosovetskyi.onemoney.util.formatMoney
+import org.syalosovetskyi.onemoney.util.formatMoneyCompact
+import org.syalosovetskyi.onemoney.util.REPORTING_CURRENCY
+import org.syalosovetskyi.onemoney.ui.components.text.FitAmountText
+import org.syalosovetskyi.onemoney.ui.components.text.compactSuffixes
 import org.syalosovetskyi.onemoney.ui.accounts.currencySymbol
 import org.syalosovetskyi.onemoney.util.parseColorHex
 import java.util.*
@@ -472,6 +476,7 @@ private fun DrawerMenuItem(
 fun SharedTopBar(
     totalBalance:       Double,
     currentPage:        Int,
+    currency:           String = REPORTING_CURRENCY,
     onAvatarClick:      () -> Unit = {},
     onPlusClick:        () -> Unit,
     onEditCategories:   () -> Unit = {},
@@ -514,12 +519,14 @@ fun SharedTopBar(
                 style      = topBarTypo.topBarLabel.copy(letterSpacing = 0.sp),
                 color      = topBarColors.primaryText
             )
-            Text(
-                formatMoney(totalBalance) + " ₴",
-                style      = topBarTypo.topBarBalance.copy(letterSpacing = 0.sp),
-                color      = topBarColors.primaryText,
-                maxLines   = 1,
-                overflow   = TextOverflow.Ellipsis
+            // R4: «1 802 3…» більше не буває — кегль зменшується, а в крайньому разі «1,8 млн ₴».
+            // R10: знак — з валюти, у якій пораховано підсумок (валюта звітності), а не зашитий «₴».
+            FitAmountText(
+                formatMoney(totalBalance, currency),
+                style       = topBarTypo.topBarBalance.copy(letterSpacing = 0.sp),
+                color       = topBarColors.primaryText,
+                compactText = formatMoneyCompact(totalBalance, currency, compactSuffixes()),
+                modifier    = Modifier.fillMaxWidth()
             )
         }
 

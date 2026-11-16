@@ -22,18 +22,22 @@
     <string name="budget_savings">Savings</string>
     <string name="budget_spent">spent</string>
     <string name="budget_received">received</string>
-    <string name="budget_in_budget">budget %1$s ₴</string>
+    <string name="budget_in_budget">budget %1$s</string>
     <string name="budget_month_budget">Monthly budget</string>
     <string name="budget_account_balance">Account balance</string>
     <string name="budget_forecast">forecast</string>
     <string name="budget_days_passed">%1$d of %2$d days passed</string>
-    <string name="budget_spent_to_end">spend to month-end ~%1$s ₴</string>
-    <string name="budget_saved">saved %1$s ₴</string>
-    <string name="budget_available">Available in budget: %1$s ₴</string>
+    <string name="budget_spent_to_end">spend to month-end ~%1$s</string>
+    <string name="budget_saved">saved %1$s</string>
+    <string name="budget_available">Available in budget: %1$s</string>
     <string name="budget_overspend">overspent</string>
     <string name="budget_income_prompt">Enter expected income…</string>
     <string name="budget_more">More…</string>
     <string name="budget_collapse">Collapse</string>
+    <!-- Скорочення сум (R4, serg/tasks#3037): «1,2 млн ₴» -->
+    <string name="amount_suffix_thousand">K</string>
+    <string name="amount_suffix_million">M</string>
+    <string name="amount_suffix_billion">B</string>
 
     <!-- Accounts screen -->
     <string name="acc_tab_accounts">Accounts</string>

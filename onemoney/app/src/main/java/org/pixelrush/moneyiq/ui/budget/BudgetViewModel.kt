@@ -112,3 +112,31 @@ class BudgetViewModel @Inject constructor(
 /** Weekly limits accrue per calendar day; a seven-day selection gets exactly one weekly limit. */
 internal fun periodBudget(category: CategoryEntity, days: Int): Double =
     if (category.budgetPeriod == "WEEKLY") category.budgetAmount * days / 7.0 else category.budgetAmount
+
+/** Як читати відхилення факту від плану (R8/R9, serg/tasks#3037). */
+internal enum class BudgetDeviationKind {
+    /** До плану ще лишилося [BudgetDeviation.amount] (витрат — можна витратити, доходу — ще надійде). */
+    REMAINING,
+    /** Витрати перевищили план на [BudgetDeviation.amount] — показувати кольором помилки зі знаком «−». */
+    OVERSPENT,
+    /** Дохід перевищив план на [BudgetDeviation.amount] — це добре: знак «+», не червоний. */
+    ABOVE_PLAN,
+    /** Факт рівно дорівнює плану. */
+    ON_PLAN,
+}
+
+/** [amount] завжди ≥ 0; знак і колір визначає [kind]. */
+internal data class BudgetDeviation(val kind: BudgetDeviationKind, val amount: Double)
+
+internal fun budgetDeviation(isIncome: Boolean, plan: Double, actual: Double): BudgetDeviation = when {
+    actual > plan -> BudgetDeviation(if (isIncome) BudgetDeviationKind.ABOVE_PLAN else BudgetDeviationKind.OVERSPENT, actual - plan)
+    actual < plan -> BudgetDeviation(BudgetDeviationKind.REMAINING, plan - actual)
+    else          -> BudgetDeviation(BudgetDeviationKind.ON_PLAN, 0.0)
+}
+
+/** Текст відхилення: «−1 876,54 ₴» для перевитрати, «+1 239 880,29 ₴» для доходу понад план. */
+internal fun BudgetDeviation.signedText(currency: String): String = when (kind) {
+    BudgetDeviationKind.OVERSPENT  -> org.syalosovetskyi.onemoney.util.formatMoney(-amount, currency)
+    BudgetDeviationKind.ABOVE_PLAN -> "+" + org.syalosovetskyi.onemoney.util.formatMoney(amount, currency)
+    else                           -> org.syalosovetskyi.onemoney.util.formatMoney(amount, currency)
+}

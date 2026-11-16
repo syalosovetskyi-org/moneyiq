@@ -437,7 +437,7 @@ private fun BalanceCard(label: String, amount: Double, modifier: Modifier = Modi
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.58f))
             Spacer(Modifier.height(2.dp))
             Text(
-                "${formatMoney(amount)} ₴",
+                org.syalosovetskyi.onemoney.util.formatBase(amount),
                 style      = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color      = MaterialTheme.colorScheme.onSurface,
