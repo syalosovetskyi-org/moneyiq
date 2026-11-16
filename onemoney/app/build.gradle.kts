@@ -129,6 +129,9 @@ android {
         unitTests {
             isReturnDefaultValues = true
             isIncludeAndroidResources = true
+            // Матриця знімків (~470 кейсів Robolectric NATIVE, serg/tasks#3037) в одному JVM:
+            // типових 512 МБ купи тестового процесу замало.
+            all { it.maxHeapSize = "2g" }
         }
     }
 
