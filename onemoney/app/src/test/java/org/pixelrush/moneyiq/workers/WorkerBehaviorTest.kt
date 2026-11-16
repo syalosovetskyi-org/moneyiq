@@ -93,26 +93,34 @@ class WorkerBehaviorTest {
             org.syalosovetskyi.onemoney.util.BackupData(
                 org.syalosovetskyi.onemoney.util.BackupSerializer.BACKUP_VERSION, 0, emptyList(), emptyList(), emptyList()))
             .toByteArray(Charsets.UTF_8)
-        val server = com.sun.net.httpserver.HttpServer.create(java.net.InetSocketAddress("127.0.0.1", 0), 0)
-        server.createContext("/api/sync") { exchange ->
-            requested.set(exchange.requestURI.query)
-            exchange.sendResponseHeaders(200, body.size.toLong())
-            exchange.responseBody.use { it.write(body) }
-        }
-        server.start()
+        // Мінімальний HTTP на сокеті: com.sun.net.httpserver недоступний на android-класпасі тестів.
+        val server = java.net.ServerSocket(0, 1, java.net.InetAddress.getByName("127.0.0.1"))
+        val responder = Thread {
+            server.accept().use { socket ->
+                val reader = socket.getInputStream().bufferedReader(Charsets.ISO_8859_1)
+                requested.set(reader.readLine()) // "GET /api/sync?since=… HTTP/1.1"
+                while (!reader.readLine().isNullOrEmpty()) { /* пропускаємо заголовки */ }
+                val out = socket.getOutputStream()
+                out.write(("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n" +
+                    "Content-Length: ${body.size}\r\nConnection: close\r\n\r\n").toByteArray(Charsets.ISO_8859_1))
+                out.write(body)
+                out.flush()
+            }
+        }.apply { isDaemon = true; start() }
         try {
             val lastSync = 1_800_000_000_000L
             every { settings.settings } returns flowOf(AppSettings(
-                monoflowUrl = "http://127.0.0.1:${server.address.port}", monoflowToken = "test",
+                monoflowUrl = "http://127.0.0.1:${server.localPort}", monoflowToken = "test",
                 monoflowLastSyncMs = lastSync))
             coEvery { overrides.pushPending() } returns TxOverrideRepository.PushResult()
             assertEquals(ListenableWorker.Result.success(),
                 TestListenableWorkerBuilder<MonoFlowSyncWorker>(app).build().doWork())
-            val since = requested.get()!!.substringAfter("since=").toLong()
+            responder.join(5_000)
+            val since = requested.get()!!.substringAfter("since=").substringBefore(' ').toLong()
             assertTrue("since=$since must reach back at least a day before last sync $lastSync",
                 since <= lastSync - java.util.concurrent.TimeUnit.DAYS.toMillis(1))
         } finally {
-            server.stop(0)
+            server.close()
         }
     }
 
