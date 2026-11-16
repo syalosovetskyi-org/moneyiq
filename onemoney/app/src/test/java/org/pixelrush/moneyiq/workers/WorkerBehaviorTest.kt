@@ -83,6 +83,39 @@ class WorkerBehaviorTest {
             TestListenableWorkerBuilder<MonoFlowSyncWorker>(app).build().doWork())
     }
 
+    /** Сервер фільтрує операції за банківською датою (t.date > since), а не за часом,
+     *  коли вона потрапила на сервер. Курсор = годинник телефона губив операції, які
+     *  сервер догрузив пізніше (втрачений вебхук, опитування виписки), назавжди (serg/tasks#3045). */
+    @Test fun incremental_sync_requests_overlap_before_last_sync() = runTest {
+        org.junit.Assume.assumeTrue(BuildConfig.MONOFLOW_ENABLED)
+        val requested = java.util.concurrent.atomic.AtomicReference<String?>()
+        val body = org.syalosovetskyi.onemoney.util.BackupSerializer.serialize(
+            org.syalosovetskyi.onemoney.util.BackupData(
+                org.syalosovetskyi.onemoney.util.BackupSerializer.BACKUP_VERSION, 0, emptyList(), emptyList(), emptyList()))
+            .toByteArray(Charsets.UTF_8)
+        val server = com.sun.net.httpserver.HttpServer.create(java.net.InetSocketAddress("127.0.0.1", 0), 0)
+        server.createContext("/api/sync") { exchange ->
+            requested.set(exchange.requestURI.query)
+            exchange.sendResponseHeaders(200, body.size.toLong())
+            exchange.responseBody.use { it.write(body) }
+        }
+        server.start()
+        try {
+            val lastSync = 1_800_000_000_000L
+            every { settings.settings } returns flowOf(AppSettings(
+                monoflowUrl = "http://127.0.0.1:${server.address.port}", monoflowToken = "test",
+                monoflowLastSyncMs = lastSync))
+            coEvery { overrides.pushPending() } returns TxOverrideRepository.PushResult()
+            assertEquals(ListenableWorker.Result.success(),
+                TestListenableWorkerBuilder<MonoFlowSyncWorker>(app).build().doWork())
+            val since = requested.get()!!.substringAfter("since=").toLong()
+            assertTrue("since=$since must reach back at least a day before last sync $lastSync",
+                since <= lastSync - java.util.concurrent.TimeUnit.DAYS.toMillis(1))
+        } finally {
+            server.stop(0)
+        }
+    }
+
     @Test fun override_push_distinguishes_success_network_and_rejection() = runTest {
         every { settings.settings } returns flowOf(AppSettings(monoflowUrl = "https://example.test", monoflowToken = "test"))
         for ((pushed, expected) in listOf(
