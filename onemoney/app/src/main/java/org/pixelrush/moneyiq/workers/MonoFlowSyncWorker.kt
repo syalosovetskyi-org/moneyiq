@@ -51,7 +51,7 @@ class MonoFlowSyncWorker(
             val token = settings.monoflowToken
             if (url.isBlank() || token.isBlank()) return@withContext Result.failure(workDataOf("error" to "not_configured"))
 
-            val since = settings.monoflowLastSyncMs
+            val since = monoFlowSinceMs(settings.monoflowLastSyncMs)
 
             // СПЕРШУ віддаємо свої правки, і лише потім тягнемо: тягнення перезаписує
             // операції за id, тож невіддана правка була б тут мовчки затерта.

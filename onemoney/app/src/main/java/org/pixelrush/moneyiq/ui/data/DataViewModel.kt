@@ -103,14 +103,11 @@ class DataViewModel @Inject constructor(
         }
     }
 
+    /** Один знімок у транзакції + валідація: файл, який не відновиться, не пишемо (serg/tasks#3045). */
     suspend fun buildExportJson(): String = withContext(Dispatchers.IO) {
-        val accounts     = accountDao.getAllAccountsOnce()
-        val categories   = categoryDao.getAllCategoriesOnce()
-        val transactions = txDao.getAllTransactions()
-        BackupSerializer.serialize(
-            BackupData(BackupSerializer.BACKUP_VERSION, System.currentTimeMillis(),
-                accounts, categories, transactions)
-        )
+        val data = backupStore.snapshot()
+        BackupSerializer.validate(data)
+        BackupSerializer.serialize(data)
     }
 
     fun writeExportToUri(context: Context, uri: Uri, json: String) {
@@ -222,15 +219,7 @@ class DataViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = _state.value.copy(isBacking = true)
             try {
-                val accounts     = withContext(Dispatchers.IO) { accountDao.getAllAccountsOnce() }
-                val categories   = withContext(Dispatchers.IO) { categoryDao.getAllCategoriesOnce() }
-                val transactions = withContext(Dispatchers.IO) { txDao.getAllTransactions() }
-                val json = withContext(Dispatchers.IO) {
-                    BackupSerializer.serialize(
-                        BackupData(BackupSerializer.BACKUP_VERSION,
-                            System.currentTimeMillis(), accounts, categories, transactions)
-                    )
-                }
+                val json = buildExportJson()
                 val treeUri  = Uri.parse(folderUri)
                 val dateFmt = SimpleDateFormat("yyyy-MM-dd_HHmmss_SSS", Locale.ROOT)
                 val fileName = "zerno_${dateFmt.format(Date())}.json"
@@ -353,7 +342,7 @@ class DataViewModel @Inject constructor(
                     )
                     return@launch
                 }
-                val since = _state.value.monoflowLastSyncMs
+                val since = org.syalosovetskyi.onemoney.workers.monoFlowSinceMs(_state.value.monoflowLastSyncMs)
                 val json  = withContext(Dispatchers.IO) {
                     val base = if (url.endsWith("/api/sync")) url else "$url/api/sync"
                     val conn = java.net.URL("$base?since=$since")

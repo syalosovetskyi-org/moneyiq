@@ -12,6 +12,18 @@ import org.syalosovetskyi.onemoney.util.planDefaultCategoryMerge
 private const val TAG = "MonoFlowSync"
 
 /**
+ * Вікно перекриття інкрементального синка. Сервер фільтрує `since` за банківською датою
+ * операції, а курсор береться з годинника телефона: операцію, яку сервер догрузив пізніше
+ * (втрачений вебхук, опитування виписки), вузьке вікно губило б назавжди. Повторна
+ * доставка ідемпотентна (REPLACE за id), невіддані правки пушаться до тягнення (serg/tasks#3045).
+ */
+const val MONOFLOW_SYNC_OVERLAP_MS = 7L * 24 * 60 * 60 * 1000
+
+/** `since` для запиту: 0 (повний синк) лишається 0, інакше відступаємо на вікно перекриття. */
+fun monoFlowSinceMs(lastSyncMs: Long): Long =
+    if (lastSyncMs <= 0L) 0L else (lastSyncMs - MONOFLOW_SYNC_OVERLAP_MS).coerceAtLeast(0L)
+
+/**
  * Застосування вже розібраної відповіді mono-flow до локальної БД. Винесено з
  * [MonoFlowSyncWorker.doWork], щоб сценарії «чиста установка / оновлення» гонялись у
  * тестах на in-memory Room без мережі та Hilt (serg/tasks#2673). Поведінка та сама:
