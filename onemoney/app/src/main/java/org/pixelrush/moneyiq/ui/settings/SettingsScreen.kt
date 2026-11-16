@@ -112,8 +112,11 @@ private fun MainSettingsContent(
         ThemeMode.SYSTEM -> stringResource(R.string.settings_theme_system)
     }
     val defaultLangLabel = stringResource(R.string.settings_lang_default)
-    val langLabel = LANGUAGES.find { it.first == settings.language }
-        ?.let { if (it.first == "default") defaultLangLabel else it.second } ?: defaultLangLabel
+    // Лише мови з перекладами (res/values/languages.xml, #3037 R12).
+    val languageTags = stringArrayResource(R.array.app_language_tags)
+    val languages = remember(languageTags.toList()) { languageOptions(languageTags.toList()) }
+    val langLabel = languages.find { it.first == settings.language }
+        ?.let { if (it.first == LANGUAGE_DEFAULT) defaultLangLabel else it.second } ?: defaultLangLabel
 
     Column(
         modifier = Modifier
@@ -243,10 +246,10 @@ private fun MainSettingsContent(
         RadioListDialog(
             title   = stringResource(R.string.settings_language),
             icon    = Icons.Default.Language,
-            options = LANGUAGES.map { if (it.first == "default") defaultLangLabel else it.second },
-            selected = LANGUAGES.indexOfFirst { it.first == settings.language }.coerceAtLeast(0),
+            options = languages.map { if (it.first == LANGUAGE_DEFAULT) defaultLangLabel else it.second },
+            selected = languages.indexOfFirst { it.first == settings.language }.coerceAtLeast(0),
             onSelect = { idx ->
-                val tag = LANGUAGES[idx].first
+                val tag = languages[idx].first
                 vm.setLanguage(tag)
                 org.syalosovetskyi.onemoney.util.LocaleWrapper.setLang(context, tag)
                 showLangDialog = false
