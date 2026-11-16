@@ -22,18 +22,22 @@
     <string name="budget_savings">Сбережения</string>
     <string name="budget_spent">потрачено</string>
     <string name="budget_received">получено</string>
-    <string name="budget_in_budget">в бюджете %1$s ₴</string>
+    <string name="budget_in_budget">в бюджете %1$s</string>
     <string name="budget_month_budget">Бюджет на месяц</string>
     <string name="budget_account_balance">Баланс счёта</string>
     <string name="budget_forecast">прогноз</string>
     <string name="budget_days_passed">прошло %1$d из %2$d дней</string>
-    <string name="budget_spent_to_end">расходы до конца ~%1$s ₴</string>
-    <string name="budget_saved">сохранено %1$s ₴</string>
-    <string name="budget_available">Доступно в бюджете: %1$s ₴</string>
+    <string name="budget_spent_to_end">расходы до конца ~%1$s</string>
+    <string name="budget_saved">сохранено %1$s</string>
+    <string name="budget_available">Доступно в бюджете: %1$s</string>
     <string name="budget_overspend">перерасход</string>
     <string name="budget_income_prompt">Введите сумму ожидаемого дохода…</string>
     <string name="budget_more">Больше…</string>
     <string name="budget_collapse">Свернуть</string>
+    <!-- Скорочення сум (R4, serg/tasks#3037): «1,2 млн ₴» -->
+    <string name="amount_suffix_thousand">тыс.</string>
+    <string name="amount_suffix_million">млн</string>
+    <string name="amount_suffix_billion">млрд</string>
 
     <!-- Accounts screen -->
     <string name="acc_tab_accounts">Счета</string>
@@ -132,6 +136,7 @@
     <!-- Categories -->
     <string name="common_back">Назад</string>
     <string name="cat_from_category">Из категории</string>
+    <string name="cat_type_inherited">Как у родительской категории</string>
     <string name="cat_edit_categories">Редактировать категории</string>
     <string name="cat_edit_subcategories">Редактировать субкатегории</string>
     <string name="cat_subcategories">Подкатегории</string>
@@ -324,10 +329,10 @@
     <string name="data_autosync">Автосинк каждые 2 ч</string>
     <string name="data_autosync_sub">Только при наличии интернета</string>
     <string name="data_last_sync">Последний синк: %1$s</string>
-    <string name="data_reset_explain">Чтобы удалить все ваши данные (счета, категории, операции и бюджеты), выберите Удалить все данные.\n\nЧтобы удалить только операции, выберите Удалить все операции.</string>
+    <string name="data_reset_explain">Можно удалить все данные или только операции. Перед удалением будет ещё одно подтверждение.</string>
     <string name="data_delete_all">Удалить все данные</string>
     <string name="data_delete_all_tx">Удалить все операции</string>
-    <string name="data_dismiss">Отменить</string>
+    <string name="data_dismiss">Отмена</string>
     <string name="data_export_saved">Экспорт успешно сохранён ✓</string>
     <string name="data_write_error">Ошибка записи: %1$s</string>
     <string name="data_read_file_error">Не удалось прочитать файл</string>
@@ -342,6 +347,31 @@
     <string name="data_restore_error">Ошибка восстановления: %1$s</string>
     <string name="data_backup_created">Резервная копия создана ✓</string>
     <string name="data_all_tx_deleted">Все операции удалены</string>
+    <!-- #3037: confirmations for irreversible data actions, CSV export -->
+    <string name="data_section_danger">Опасная зона</string>
+    <string name="data_reset_all_title">Удалить все данные?</string>
+    <string name="data_reset_all_msg">Будут безвозвратно удалены:\n• все счета и их балансы\n• все категории и подкатегории вместе с бюджетами\n• все операции\n\nЭто действие нельзя отменить. Если данные могут понадобиться, сначала создайте резервную копию.</string>
+    <string name="data_reset_tx_title">Удалить все операции?</string>
+    <string name="data_reset_tx_msg">Все операции будут безвозвратно удалены, а балансы всех счетов обнулятся. Счета, категории и бюджеты останутся.\n\nЭто действие нельзя отменить. Если операции могут понадобиться, сначала создайте резервную копию.</string>
+    <string name="data_reset_confirm">Удалить навсегда</string>
+    <string name="data_drive_disconnect_title">Отключить Google Drive?</string>
+    <string name="data_drive_disconnect_msg">Автобэкап остановится, а приложение забудет выбранную папку. Файлы резервных копий в Drive останутся — их можно восстановить, если снова выбрать эту папку.</string>
+    <string name="data_monoflow_disconnect_title">Отключить MonoFlow?</string>
+    <string name="data_monoflow_disconnect_msg">Адрес сервера и токен будут стёрты с устройства, автосинхронизация выключена. Чтобы подключиться снова, придётся ввести их ещё раз. Уже синхронизированные счета и операции останутся.</string>
+    <string name="csv_subject">Zerno — экспорт операций</string>
+    <string name="csv_col_date">Дата</string>
+    <string name="csv_col_type">Тип</string>
+    <string name="csv_col_amount">Сумма</string>
+    <string name="csv_col_account">Счёт</string>
+    <string name="csv_col_to_account">Счёт зачисления</string>
+    <string name="csv_col_category">Категория</string>
+    <string name="csv_col_note">Заметка</string>
+    <string name="csv_type_income">Доход</string>
+    <string name="csv_type_expense">Расход</string>
+    <string name="csv_type_transfer">Перевод</string>
+    <string name="csv_type_borrow">Взять в долг</string>
+    <string name="csv_type_lend">Дать в долг</string>
+    <string name="csv_type_repay">Вернуть долг</string>
     <string name="data_monoflow_configure">MonoFlow: настройте URL и токен</string>
     <string name="data_monoflow_synced">MonoFlow синхронизирован ✓ (%1$d счетов, %2$d операций)</string>
     <string name="data_monoflow_error">MonoFlow: ошибка — %1$s</string>

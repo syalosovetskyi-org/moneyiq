@@ -4,13 +4,28 @@ import org.syalosovetskyi.onemoney.data.db.entities.AccountEntity
 import org.syalosovetskyi.onemoney.data.db.entities.TransactionEntity
 import org.syalosovetskyi.onemoney.data.db.entities.TransactionType
 
+/**
+ * Валюта звітності: усі крос-валютні підсумки (шапка main, бюджет, категорії) перераховуються
+ * в неї за курсами НБУ (`rate` = гривень за одиницю). Знак валюти для таких сум береться
+ * з цього коду через [formatBase], а не зашивається в UI як «₴» (R10, serg/tasks#3037).
+ */
+const val REPORTING_CURRENCY = "UAH"
+
+/** Знак валюти звітності — для місць, де число і знак виводяться окремо (клавіатура, підписи). */
+val REPORTING_CURRENCY_SYMBOL: String
+    get() = org.syalosovetskyi.onemoney.ui.settings.data.CURRENCIES_ALL
+        .find { it.code == REPORTING_CURRENCY }?.symbol ?: REPORTING_CURRENCY
+
+/** Сума у валюті звітності зі знаком валюти, наприклад «1 234,50 ₴». */
+fun formatBase(amount: Double): String = formatMoney(amount, REPORTING_CURRENCY)
+
 /** All cross-account summaries use UAH, the application's reporting currency. */
 data class BaseValuation(val amount: Double, val missingCurrencies: Set<String> = emptySet()) {
     val complete: Boolean get() = missingCurrencies.isEmpty()
 }
 
 fun baseRate(currency: String, rates: Map<String, Double>): Double? =
-    (if (currency == "UAH") 1.0 else rates[currency])?.takeIf { it.isFinite() && it > 0 }
+    (if (currency == REPORTING_CURRENCY) 1.0 else rates[currency])?.takeIf { it.isFinite() && it > 0 }
 
 fun valueInBase(values: List<Pair<Double, String>>, rates: Map<String, Double>): BaseValuation {
     val missing = sortedSetOf<String>()
@@ -24,7 +39,8 @@ fun valueInBase(values: List<Pair<Double, String>>, rates: Map<String, Double>):
 }
 
 fun accountValuation(accounts: List<AccountEntity>, rates: Map<String, Double>): BaseValuation =
-    valueInBase(accounts.filter { it.includeInTotal }.map { it.balance to it.currency }, rates)
+    // Знак і фільтр includeInTotal — з тієї ж функції, що й «Мої фінанси» (R3).
+    valueInBase(accounts.filter { it.includeInTotal }.map { totalContribution(it) to it.currency }, rates)
 
 data class PeriodBalances(val opening: BaseValuation, val closing: BaseValuation)
 

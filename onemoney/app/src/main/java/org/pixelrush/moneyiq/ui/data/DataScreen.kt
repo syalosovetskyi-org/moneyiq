@@ -34,6 +34,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import org.syalosovetskyi.onemoney.R
+import org.syalosovetskyi.onemoney.ui.components.dialogs.ConfirmationDialog
 import org.syalosovetskyi.onemoney.workers.DriveBackupEntry
 import org.syalosovetskyi.onemoney.ui.theme.Spacing
 import org.syalosovetskyi.onemoney.ui.theme.OneMoneyTheme
@@ -60,6 +61,7 @@ fun DataScreen(
     var showResetDialog   by remember { mutableStateOf(false) }
     var showImportConfirm by remember { mutableStateOf<Uri?>(null) }
     var showRestoreFromDrive by remember { mutableStateOf<DriveBackupEntry?>(null) }
+    var showDriveDisconnect by remember { mutableStateOf(false) }
     // JSON рядок для запису після відкриття CreateDocument
     var pendingExportJson by remember { mutableStateOf<String?>(null) }
     var pendingCsvIntent  by remember { mutableStateOf<Intent?>(null) }
@@ -130,21 +132,6 @@ fun DataScreen(
                 .padding(padding),
             contentPadding = PaddingValues(bottom = 40.dp)
         ) {
-
-            // ── Скинути дані ──────────────────────────────────────────────────
-            item {
-                ListItem(
-                    modifier = Modifier.clickable { showResetDialog = true },
-                    leadingContent = {
-                        Icon(Icons.Default.RestartAlt, null,
-                            tint = MaterialTheme.colorScheme.error)
-                    },
-                    headlineContent = {
-                        Text(stringResource(R.string.data_reset), color = MaterialTheme.colorScheme.error)
-                    }
-                )
-                HorizontalDivider()
-            }
 
             // ── Імпорт / Експорт ──────────────────────────────────────────────
             item { DataSectionHeader(stringResource(R.string.data_section_import_export)) }
@@ -271,12 +258,12 @@ fun DataScreen(
                                     fontWeight = FontWeight.SemiBold,
                                     modifier = Modifier.weight(1f)
                                 )
-                                IconButton(
-                                    onClick = { viewModel.clearDriveFolder(context) },
-                                    modifier = Modifier.size(32.dp)
+                                // Visible label + confirmation instead of a bare «×» (#3037 R14).
+                                TextButton(
+                                    onClick = { showDriveDisconnect = true },
+                                    colors  = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                                 ) {
-                                    Icon(Icons.Default.Close, stringResource(R.string.data_disconnect),
-                                        modifier = Modifier.size(18.dp))
+                                    Text(stringResource(R.string.data_disconnect))
                                 }
                             }
                             if (state.driveLastBackupMs > 0L) {
@@ -414,6 +401,22 @@ fun DataScreen(
             items(state.localBackups) { backup ->
                 LocalBackupItem(backup = backup)
             }
+
+            // ── Небезпечна зона: скидання даних — останнім, після бекапів (#3037 R13)
+            item {
+                HorizontalDivider()
+                DataSectionHeader(stringResource(R.string.data_section_danger))
+                ListItem(
+                    modifier = Modifier.clickable { showResetDialog = true },
+                    leadingContent = {
+                        Icon(Icons.Default.RestartAlt, null,
+                            tint = MaterialTheme.colorScheme.error)
+                    },
+                    headlineContent = {
+                        Text(stringResource(R.string.data_reset), color = MaterialTheme.colorScheme.error)
+                    }
+                )
+            }
         }
     }
 
@@ -430,6 +433,20 @@ fun DataScreen(
                 viewModel.deleteAllTransactions(context)
             },
             onDismiss = { showResetDialog = false }
+        )
+    }
+
+    if (showDriveDisconnect) {
+        ConfirmationDialog(
+            title       = stringResource(R.string.data_drive_disconnect_title),
+            message     = stringResource(R.string.data_drive_disconnect_msg),
+            icon        = Icons.Default.LinkOff,
+            confirmText = stringResource(R.string.data_disconnect),
+            onConfirm   = {
+                showDriveDisconnect = false
+                viewModel.clearDriveFolder(context)
+            },
+            onDismiss   = { showDriveDisconnect = false }
         )
     }
 

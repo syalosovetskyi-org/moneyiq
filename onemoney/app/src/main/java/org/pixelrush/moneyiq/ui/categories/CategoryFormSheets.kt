@@ -56,6 +56,7 @@ import org.syalosovetskyi.onemoney.ui.settings.data.CURRENCIES_CRYPTO
 import org.syalosovetskyi.onemoney.ui.settings.data.CURRENCIES_MAIN
 import org.syalosovetskyi.onemoney.ui.settings.data.CURRENCIES_OTHER
 import org.syalosovetskyi.onemoney.util.suggestCategoryStyle
+import org.syalosovetskyi.onemoney.util.formatMoney
 import org.syalosovetskyi.onemoney.ui.theme.Spacing
 import org.syalosovetskyi.onemoney.ui.theme.OneMoneyTheme
 import org.syalosovetskyi.onemoney.ui.theme.FallbackCategoryColor
@@ -91,6 +92,7 @@ fun CategoryFormSheet(
     var period        by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.budgetPeriod ?: "MONTHLY") }
     var archived      by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.archived ?: false) }
     var currencyCode  by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.currencyCode ?: "UAH") }
+    val isSubcategory = forParentId != null || existing?.parentId != null
 
     var showIconPicker     by remember { mutableStateOf(false) }
     var showDeleteConfirm  by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
@@ -209,16 +211,30 @@ fun CategoryFormSheet(
                                 modifier = Modifier.size(22.dp))
                         },
                         headlineContent = { Text(stringResource(R.string.acc_field_type)) },
-                        trailingContent = {
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                listOf(TransactionType.EXPENSE to stringResource(R.string.common_expenses), TransactionType.INCOME to stringResource(R.string.common_incomes))
-                                    .forEach { (t, label) ->
-                                        FilterChip(
-                                            selected = type == t,
-                                            onClick  = { type = t },
-                                            label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
-                                        )
-                                    }
+                        // A subcategory inherits the parent's type (#3037 R17): show it read-only.
+                        supportingContent = if (isSubcategory) {
+                            { Text(stringResource(R.string.cat_type_inherited)) }
+                        } else null,
+                        trailingContent = if (isSubcategory) {
+                            {
+                                Text(
+                                    stringResource(if (type == TransactionType.INCOME) R.string.common_incomes else R.string.common_expenses),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        } else {
+                            {
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    listOf(TransactionType.EXPENSE to stringResource(R.string.common_expenses), TransactionType.INCOME to stringResource(R.string.common_incomes))
+                                        .forEach { (t, label) ->
+                                            FilterChip(
+                                                selected = type == t,
+                                                onClick  = { type = t },
+                                                label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                                            )
+                                        }
+                                }
                             }
                         }
                     )
@@ -260,7 +276,7 @@ fun CategoryFormSheet(
                         headlineContent  = { Text(stringResource(R.string.cat_budget)) },
                         supportingContent = {
                             Text(
-                                if (budgetNum > 0.0) "$budget ₴ / ${if (period == "MONTHLY") stringResource(R.string.cat_month) else stringResource(R.string.cat_week)}"
+                                if (budgetNum > 0.0) "${formatMoney(budgetNum, currencyCode)} / ${if (period == "MONTHLY") stringResource(R.string.cat_month) else stringResource(R.string.cat_week)}"
                                 else stringResource(R.string.cat_no_limit),
                                 color = if (budgetNum > 0.0) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                                         else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)

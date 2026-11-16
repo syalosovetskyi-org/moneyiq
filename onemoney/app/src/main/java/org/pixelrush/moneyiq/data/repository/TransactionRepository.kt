@@ -68,7 +68,7 @@ class TransactionRepository @Inject constructor(
     fun getBaseTransactionsByPeriod(from: Long, to: Long): Flow<List<TransactionWithDetails>> =
         combine(transactionDao.getTransactionsByDateRange(from, to), ratesRepo.rates) { rows, rates ->
             rows.mapNotNull { row -> baseRate(row.accountCurrency, rates)?.let {
-                row.copy(amount = row.amount * it, accountCurrency = "UAH")
+                row.copy(amount = row.amount * it, accountCurrency = REPORTING_CURRENCY)
             } }
         }
 

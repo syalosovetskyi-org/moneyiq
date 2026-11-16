@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.launch
 import org.syalosovetskyi.onemoney.R
+import org.syalosovetskyi.onemoney.ui.components.dialogs.ConfirmationDialog
 import org.syalosovetskyi.onemoney.workers.DriveBackupEntry
 import org.syalosovetskyi.onemoney.ui.theme.Spacing
 import org.syalosovetskyi.onemoney.ui.theme.OneMoneyTheme
@@ -43,6 +44,21 @@ internal fun MonoFlowSyncCard(
     var editUrl   by remember(state.monoflowUrl)   { mutableStateOf(state.monoflowUrl)   }
     var editToken by remember(state.monoflowToken) { mutableStateOf(state.monoflowToken) }
     var showToken by remember { mutableStateOf(false) }
+    var showDisconnectConfirm by remember { mutableStateOf(false) }
+
+    if (showDisconnectConfirm) {
+        ConfirmationDialog(
+            title       = stringResource(R.string.data_monoflow_disconnect_title),
+            message     = stringResource(R.string.data_monoflow_disconnect_msg),
+            icon        = Icons.Default.LinkOff,
+            confirmText = stringResource(R.string.data_disconnect),
+            onConfirm   = {
+                showDisconnectConfirm = false
+                viewModel.clearMonoFlowConfig(context)
+            },
+            onDismiss   = { showDisconnectConfirm = false }
+        )
+    }
 
     val isConfigured = state.monoflowUrl.isNotBlank() && state.monoflowToken.isNotBlank()
 
@@ -76,12 +92,12 @@ internal fun MonoFlowSyncCard(
                     modifier = Modifier.weight(1f)
                 )
                 if (isConfigured) {
-                    IconButton(
-                        onClick = { viewModel.clearMonoFlowConfig(context) },
-                        modifier = Modifier.size(32.dp)
+                    // Visible label instead of a bare «×» that read as "close hint" (#3037 R14).
+                    TextButton(
+                        onClick = { showDisconnectConfirm = true },
+                        colors  = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                     ) {
-                        Icon(Icons.Default.Close, stringResource(R.string.data_disconnect),
-                            modifier = Modifier.size(18.dp))
+                        Text(stringResource(R.string.data_disconnect))
                     }
                 }
             }
@@ -277,8 +293,47 @@ internal fun LocalBackupItem(backup: BackupEntry) {
     )
 }
 
+private enum class ResetKind { ALL, TRANSACTIONS }
+
+/**
+ * Two steps: choose what to delete, then confirm with the list of consequences.
+ * The delete callbacks fire only after the second confirmation (#3037 R13).
+ */
 @Composable
 internal fun ResetDataDialog(
+    onDeleteAll: () -> Unit,
+    onDeleteTransactions: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    var pending by remember { mutableStateOf<ResetKind?>(null) }
+
+    when (pending) {
+        ResetKind.ALL -> ConfirmationDialog(
+            title       = stringResource(R.string.data_reset_all_title),
+            message     = stringResource(R.string.data_reset_all_msg),
+            icon        = Icons.Default.Warning,
+            confirmText = stringResource(R.string.data_reset_confirm),
+            onConfirm   = onDeleteAll,
+            onDismiss   = { pending = null }
+        )
+        ResetKind.TRANSACTIONS -> ConfirmationDialog(
+            title       = stringResource(R.string.data_reset_tx_title),
+            message     = stringResource(R.string.data_reset_tx_msg),
+            icon        = Icons.Default.Warning,
+            confirmText = stringResource(R.string.data_reset_confirm),
+            onConfirm   = onDeleteTransactions,
+            onDismiss   = { pending = null }
+        )
+        null -> ResetChoiceDialog(
+            onDeleteAll          = { pending = ResetKind.ALL },
+            onDeleteTransactions = { pending = ResetKind.TRANSACTIONS },
+            onDismiss            = onDismiss
+        )
+    }
+}
+
+@Composable
+private fun ResetChoiceDialog(
     onDeleteAll: () -> Unit,
     onDeleteTransactions: () -> Unit,
     onDismiss: () -> Unit
@@ -319,7 +374,10 @@ internal fun ResetDataDialog(
                     )
                 ) { Text(stringResource(R.string.data_delete_all), fontWeight = FontWeight.SemiBold) }
                 Spacer(Modifier.height(4.dp))
-                TextButton(onClick = onDeleteTransactions) {
+                TextButton(
+                    onClick = onDeleteTransactions,
+                    colors  = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
                     Text(stringResource(R.string.data_delete_all_tx))
                 }
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.data_dismiss)) }

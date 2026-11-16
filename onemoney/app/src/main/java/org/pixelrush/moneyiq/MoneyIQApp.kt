@@ -9,6 +9,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.catch
+import org.syalosovetskyi.onemoney.data.repository.SelectedMonthRepository
 import org.syalosovetskyi.onemoney.data.repository.SettingsRepository
 import org.syalosovetskyi.onemoney.workers.MonoFlowSyncWorker
 import org.syalosovetskyi.onemoney.workers.TxOverridePushWorker
@@ -28,6 +30,7 @@ class onemoneyApp : Application() {
     @Inject lateinit var categoryRepository: CategoryRepository
     @Inject lateinit var accountDao: AccountDao
     @Inject lateinit var currencyRatesRepository: CurrencyRatesRepository
+    @Inject lateinit var selectedMonthRepository: SelectedMonthRepository
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -51,6 +54,18 @@ class onemoneyApp : Application() {
                         if (failure is kotlinx.coroutines.CancellationException) throw failure
                         CrashReporter.warning(TAG, "Could not reconcile MonoFlow scheduling", failure)
                     }
+                }
+        }
+        appScope.launch {
+            // «Перший день тижня / місяця» → межі періодів на всіх вкладках (#3037 R11).
+            settingsRepository.settings.map { it.firstDayOfWeek to it.firstDayOfMonth }
+                .distinctUntilChanged()
+                .catch { failure ->
+                    // Періоди лишаються з типовими межами (місяць з 1-го, тиждень з понеділка).
+                    CrashReporter.warning(TAG, "Could not read period settings; using defaults", failure)
+                }
+                .collect { (week, day) ->
+                    selectedMonthRepository.applyPeriodSettings(week, day)
                 }
         }
         appScope.launch { currencyRatesRepository.refreshIfStale() }

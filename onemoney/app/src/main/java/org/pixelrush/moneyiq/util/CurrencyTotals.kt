@@ -1,6 +1,7 @@
 package org.syalosovetskyi.onemoney.util
 
 import org.syalosovetskyi.onemoney.data.db.dao.TransactionWithDetails
+import org.syalosovetskyi.onemoney.data.db.entities.AccountEntity
 import org.syalosovetskyi.onemoney.data.db.entities.TransactionType
 
 data class CurrencyTotal(val income: Double = 0.0, val expense: Double = 0.0)
@@ -14,21 +15,34 @@ internal fun currencyTotals(transactions: List<TransactionWithDetails>): Map<Str
         )
     }.toSortedMap()
 
+/**
+ * Підсумки рахунків по валютах для «Мої фінанси» та підсумку «Рахунки» в пікерах.
+ * [debts] — додатна величина боргу (модуль від'ємних балансів), тож [net] = [assets] − [debts]
+ * дорівнює сумі балансів зі знаком, тобто тому самому, що й шапка main ([accountValuation]).
+ */
 data class AccountCurrencyTotal(val assets: Double, val debts: Double) {
     val net: Double get() = assets - debts
 }
 
-internal fun accountCurrencyTotals(accounts: List<org.syalosovetskyi.onemoney.data.db.entities.AccountEntity>): Map<String, AccountCurrencyTotal> =
+/**
+ * Єдина конвенція знака для всіх підсумків (R3, serg/tasks#3037).
+ *
+ * Баланс рахунку зберігається ЗІ ЗНАКОМ: операції змінюють його через `updateBalance(±amount)`
+ * (TransactionRepository), тож витрата з кредитки чи DEBT-рахунку робить баланс від'ємним —
+ * «ми винні». Тип рахунку на знак не впливає: DEBT −1000 — борг, DEBT +1000 — переплата /
+ * нам винні, і в підсумок він іде як актив. Окремої «додатної» конвенції для боргу в коді немає.
+ *
+ * Будь-який підсумок по рахунках (шапка main, «Мої фінанси», пікери, віджет) бере внесок
+ * рахунку тільки через цю функцію і тільки з рахунків, де [AccountEntity.includeInTotal].
+ */
+internal fun totalContribution(account: AccountEntity): Double =
+    if (account.includeInTotal) account.balance else 0.0
+
+internal fun accountCurrencyTotals(accounts: List<AccountEntity>): Map<String, AccountCurrencyTotal> =
     accounts.filter { it.includeInTotal }.groupBy { it.currency }.mapValues { (_, rows) ->
+        val contributions = rows.map(::totalContribution)
         AccountCurrencyTotal(
-            assets = rows.filter { it.type != org.syalosovetskyi.onemoney.data.db.entities.AccountType.DEBT && it.balance > 0 }
-                .sumOf { it.balance },
-            debts = rows.sumOf {
-                when {
-                    it.type == org.syalosovetskyi.onemoney.data.db.entities.AccountType.DEBT -> it.balance
-                    it.balance < 0 -> -it.balance
-                    else -> 0.0
-                }
-            }
+            assets = contributions.filter { it > 0 }.sum(),
+            debts  = -contributions.filter { it < 0 }.sum()
         )
     }.toSortedMap()

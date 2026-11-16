@@ -100,6 +100,26 @@ class CategoryRepositoryTest {
     }
 
     @Test
+    fun `update keeps subcategory type equal to parent type`() = runTest {
+        val parent = CategoryEntity(id = 1L, name = "Food", type = TransactionType.EXPENSE)
+        coEvery { dao.getCategoryById(1L) } returns parent
+        val child = CategoryEntity(id = 2L, name = "Cafe", type = TransactionType.INCOME, parentId = 1L)
+        repo.update(child)
+        coVerify { dao.updateCategory(child.copy(type = TransactionType.EXPENSE)) }
+    }
+
+    @Test
+    fun `changing root type carries subcategories along`() = runTest {
+        val root = CategoryEntity(id = 1L, name = "Side job", type = TransactionType.INCOME)
+        val child = CategoryEntity(id = 2L, name = "Gigs", type = TransactionType.EXPENSE, parentId = 1L)
+        val other = CategoryEntity(id = 3L, name = "Other", type = TransactionType.EXPENSE)
+        coEvery { dao.getAllCategoriesOnce() } returns listOf(root, child, other)
+        repo.update(root)
+        coVerify { dao.updateCategory(root) }
+        coVerify { dao.updateCategories(listOf(child.copy(type = TransactionType.INCOME))) }
+    }
+
+    @Test
     fun `delete delegates to dao deleteCategory`() = runTest {
         val category = CategoryEntity(id = 1L, name = "Test", type = TransactionType.EXPENSE)
         repo.delete(category)

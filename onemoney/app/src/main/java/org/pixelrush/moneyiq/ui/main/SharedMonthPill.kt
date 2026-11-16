@@ -21,17 +21,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import org.syalosovetskyi.onemoney.R
 import org.syalosovetskyi.onemoney.data.repository.AppMonth
+import org.syalosovetskyi.onemoney.data.repository.PeriodMath
 import org.syalosovetskyi.onemoney.data.repository.PeriodMode
 import org.syalosovetskyi.onemoney.ui.components.icons.DoubleChevronLeft
 import org.syalosovetskyi.onemoney.ui.components.icons.DoubleChevronRight
@@ -39,6 +42,8 @@ import org.syalosovetskyi.onemoney.ui.theme.MonthRed
 import org.syalosovetskyi.onemoney.ui.theme.MonthRedLight
 import org.syalosovetskyi.onemoney.ui.theme.OneMoneyTheme
 import org.syalosovetskyi.onemoney.ui.theme.Spacing
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.*
 
 private class Ref<T>(var value: T)
@@ -68,12 +73,8 @@ internal fun monthPillLabel(a: AppMonth): String {
             "$d ${months[today.get(Calendar.MONTH)]}"
         }
         PeriodMode.WEEK -> {
-            val cal = Calendar.getInstance()
-            cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
-            val s = "${cal.get(Calendar.DAY_OF_MONTH)} ${months[cal.get(Calendar.MONTH)]}"
-            cal.add(Calendar.DAY_OF_MONTH, 6)
-            val e = "${cal.get(Calendar.DAY_OF_MONTH)} ${months[cal.get(Calendar.MONTH)]}"
-            "$s — $e"
+            val (start, end) = PeriodMath.weekDates(LocalDate.now(), a.firstDayOfWeek)
+            "${start.dayOfMonth} ${months[start.monthValue - 1]} — ${end.dayOfMonth} ${months[end.monthValue - 1]}"
         }
         PeriodMode.YEAR  -> "${a.year}"
         PeriodMode.ALL   -> fromStart
@@ -113,20 +114,25 @@ fun SharedMonthNavPill(
     val pillLabel = monthPillLabel(appMonth)
     val pillBadge = pillBadgeFor(appMonth, daysInPeriod)
 
-    val today = Calendar.getInstance()
+    // «Поточний» — період, що містить сьогодні, з урахуванням «Першого дня місяця».
+    val todayYm = PeriodMath.monthPeriodContaining(LocalDate.now(), appMonth.firstDayOfMonth)
     val isCurrentMonth = appMonth.mode == PeriodMode.MONTH &&
-        appMonth.month == today.get(Calendar.MONTH) &&
-        appMonth.year  == today.get(Calendar.YEAR)
+        appMonth.month == todayYm.monthValue - 1 &&
+        appMonth.year  == todayYm.year
     // Малиновим підсвічується стрілка, що веде В БІК поточного місяця:
     // обраний місяць у минулому (раніше за сьогодні) → права (next);
     // обраний місяць у майбутньому (пізніше за сьогодні) → ліва (prev);
     // поточний місяць → жодна.
-    val todayOrd   = today.get(Calendar.YEAR) * 12 + today.get(Calendar.MONTH)
+    val todayOrd   = todayYm.year * 12 + (todayYm.monthValue - 1)
     val selOrd     = appMonth.year * 12 + appMonth.month
     val nextIsHot  = appMonth.mode == PeriodMode.MONTH && selOrd < todayOrd
     val prevIsHot  = appMonth.mode == PeriodMode.MONTH && selOrd > todayOrd
-    val pillColor = if (isCurrentMonth) Color(0xFF111111) else MonthRed
-    val pillBg    = Color(0xFFD5D6EC)
+    // Кольори з теми (#3037 R5): у темній темі стрілки й пілюля мають бути видимі.
+    val colors    = MaterialTheme.colorScheme
+    val hotColor  = colors.error
+    val arrowTint = colors.onSurface
+    val pillColor = if (isCurrentMonth) colors.onSecondaryContainer else hotColor
+    val pillBg    = colors.secondaryContainer
     val dimens    = OneMoneyTheme.dimens
 
     // Track swipe direction without extra recompositions (plain Ref, not MutableState)
@@ -165,7 +171,7 @@ fun SharedMonthNavPill(
     ) {
         Icon(
             DoubleChevronLeft, stringResource(R.string.period_prev),
-            tint     = if (prevIsHot) MonthRed else Color(0xFF111111),
+            tint     = if (prevIsHot) hotColor else arrowTint,
             modifier = Modifier
                 .size(dimens.pillArrowSize)
                 .testTag("month_pill_prev")
@@ -176,7 +182,11 @@ fun SharedMonthNavPill(
         Surface(
             shape    = RoundedCornerShape(dimens.pillRadius),
             color    = pillBg,
+            // weight(fill = false): пілюля займає лише залишок між стрілками і стискається
+            // (текст обрізається), а не виштовхує «›» за край (#3037 R6).
             modifier = Modifier
+                .weight(1f, fill = false)
+                .padding(horizontal = 4.dp)
                 .testTag("month_pill")
                 .clickable { showSheet = true }
         ) {
@@ -214,10 +224,14 @@ fun SharedMonthNavPill(
                     }
                     Text(
                         label,
+                        modifier   = Modifier.weight(1f, fill = false),
                         style      = MaterialTheme.typography.bodyMedium.copy(
                             fontSize = 12.sp, letterSpacing = 0.sp),
                         fontWeight = FontWeight.Light,
-                        color      = pillColor
+                        color      = pillColor,
+                        maxLines   = 1,
+                        softWrap   = false,
+                        overflow   = TextOverflow.Ellipsis
                     )
                     Icon(
                         Icons.Default.KeyboardArrowDown, null,
@@ -230,7 +244,7 @@ fun SharedMonthNavPill(
 
         Icon(
             DoubleChevronRight, stringResource(R.string.period_next),
-            tint     = if (nextIsHot) MonthRed else Color(0xFF111111),
+            tint     = if (nextIsHot) hotColor else arrowTint,
             modifier = Modifier
                 .size(dimens.pillArrowSize)
                 .testTag("month_pill_next")
@@ -266,11 +280,9 @@ fun PeriodSelectorSheet(
     val yearDays  = if (todayYear % 4 == 0 && (todayYear % 100 != 0 || todayYear % 400 == 0)) 366 else 365
 
     val months = localizedMonths()
-    val weekStart = (today.clone() as Calendar).apply { set(Calendar.DAY_OF_WEEK, firstDayOfWeek) }
-    val weekEnd   = (weekStart.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, 6) }
-    fun monthFull(c: Calendar) = months[c.get(Calendar.MONTH)]
-    val wkLabel = "${weekStart.get(Calendar.DAY_OF_MONTH)} ${monthFull(weekStart)}" +
-                  " — ${weekEnd.get(Calendar.DAY_OF_MONTH)} ${monthFull(weekEnd)}"
+    val (weekStart, weekEnd) = PeriodMath.weekDates(LocalDate.now(), appMonth.firstDayOfWeek)
+    val wkLabel = "${weekStart.dayOfMonth} ${months[weekStart.monthValue - 1]}" +
+                  " — ${weekEnd.dayOfMonth} ${months[weekEnd.monthValue - 1]}"
 
     val options = listOf(
         PeriodOption("all",   stringResource(R.string.period_all),      stringResource(R.string.period_all_sub),
@@ -300,20 +312,32 @@ fun PeriodSelectorSheet(
     var showDayPicker   by remember { mutableStateOf(false) }
     var showRangePicker by remember { mutableStateOf(false) }
 
+    // M3 DatePicker бере перший день тижня з локалі стану — підставляємо локаль
+    // з регіоном, де тиждень починається з дня з налаштувань (#3037 R11).
+    val baseLocale     = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+    val calendarLocale = remember(baseLocale, appMonth.firstDayOfWeek) {
+        PeriodMath.calendarLocaleFor(baseLocale, appMonth.firstDayOfWeek)
+    }
+
     if (showDayPicker) {
-        val dpState = rememberDatePickerState()
+        val zone = ZoneId.systemDefault()
+        val dpState = remember(calendarLocale) {
+            DatePickerState(
+                locale = calendarLocale,
+                // Повторне відкриття підсвічує вже обраний день (локальні мс → UTC-північ пікера).
+                initialSelectedDateMillis = if (appMonth.mode == PeriodMode.DAY)
+                    PeriodMath.localMillisToPickerUtc(appMonth.fromMillis, zone) else null
+            )
+        }
         DatePickerDialog(
             onDismissRequest = { showDayPicker = false },
             confirmButton = {
                 TextButton(onClick = {
                     dpState.selectedDateMillis?.let { ms ->
-                        val cal  = Calendar.getInstance().apply { timeInMillis = ms }
-                        val from = cal.apply {
-                            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-                            set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                        }.timeInMillis
-                        val to = from + 86_399_999L
-                        onSelectPeriod(AppMonth(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH),
+                        // Пікер повертає UTC-північ; межі дня — у поясі пристрою (#3037 R2).
+                        val (from, to) = PeriodMath.pickerDayToLocal(ms, zone)
+                        val date = PeriodMath.pickerUtcToDate(ms)
+                        onSelectPeriod(AppMonth(date.year, date.monthValue - 1,
                                                 PeriodMode.DAY, from, to))
                         showDayPicker = false
                         onDismiss()
@@ -326,12 +350,21 @@ fun PeriodSelectorSheet(
     }
 
     if (showRangePicker) {
+        val zone = ZoneId.systemDefault()
         DateRangePickerFullScreen(
+            calendarLocale = calendarLocale,
+            // Повторне відкриття підсвічує той самий діапазон.
+            initialStartUtc = if (appMonth.mode == PeriodMode.RANGE)
+                PeriodMath.localMillisToPickerUtc(appMonth.fromMillis, zone) else null,
+            initialEndUtc   = if (appMonth.mode == PeriodMode.RANGE)
+                PeriodMath.localMillisToPickerUtc(appMonth.toMillis, zone) else null,
             onDismiss = { showRangePicker = false },
-            onConfirm = { startMs, endMs ->
-                val cal = Calendar.getInstance().apply { timeInMillis = startMs }
-                onSelectPeriod(AppMonth(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH),
-                                        PeriodMode.RANGE, startMs, endMs))
+            onConfirm = { startUtc, endUtc ->
+                // UTC-півночі пікера → локальні 00:00 першого і 23:59:59.999 останнього дня (#3037 R2).
+                val (from, to) = PeriodMath.pickerRangeToLocal(startUtc, endUtc, zone)
+                val startDate = PeriodMath.pickerUtcToDate(minOf(startUtc, endUtc))
+                onSelectPeriod(AppMonth(startDate.year, startDate.monthValue - 1,
+                                        PeriodMode.RANGE, from, to))
                 showRangePicker = false
                 onDismiss()
             }
@@ -513,10 +546,20 @@ private fun PeriodOptionCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DateRangePickerFullScreen(
+    calendarLocale:  Locale,
+    initialStartUtc: Long?,
+    initialEndUtc:   Long?,
     onDismiss: () -> Unit,
-    onConfirm: (startMs: Long, endMs: Long) -> Unit
+    /** Обидва значення — UTC-північ обраних днів, як їх повертає M3 DateRangePicker. */
+    onConfirm: (startUtc: Long, endUtc: Long) -> Unit
 ) {
-    val rangeState = rememberDateRangePickerState()
+    val rangeState = remember(calendarLocale) {
+        DateRangePickerState(
+            locale                         = calendarLocale,
+            initialSelectedStartDateMillis = initialStartUtc,
+            initialSelectedEndDateMillis   = initialEndUtc
+        )
+    }
     val canSave    = rangeState.selectedStartDateMillis != null
 
     Dialog(

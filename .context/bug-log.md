@@ -79,3 +79,23 @@ Verification to run outside this environment:
 - Verification: `git diff --check`, static XML/palette validation only. CI must run
   `:app:compilePersonalDebugKotlin :app:testPersonalDebugUnitTest` and Compose tests.
   Gradle, Kotlin compilation and Android tests were not run in this session.
+
+
+## 2026-11-16 — UI review block C (#3037; awaiting CI)
+
+- Symptom: icon grid of account crashed (`Key "sports" was already used`); black title/«×»
+  in dark theme on Edit categories, Settings and currency picker; reset data and
+  Drive/MonoFlow disconnect ran on one tap; CSV in Russian with `onemoney` brand and «,»;
+  income form captions reversed; subcategory type changeable apart from parent.
+- Root cause: duplicate key in ACCOUNT_ICONS; screens outside Scaffold had no Surface,
+  so LocalContentColor stayed Color.Black; no confirmation step; hardcoded CSV strings;
+  captions not depending on type; type chips always shown, repository saved any type.
+- Fix: removed duplicate + `distinctBy` guard + AccountIconCatalogueTest; Surface wrappers;
+  two-step ResetDataDialog, reset moved to «Небезпечна зона» at the end, ConfirmationDialog
+  for Drive/MonoFlow; CsvExporter on resources, `zerno_` file, «;» for decimal-comma
+  locales, RFC 4180 quoting, formula-injection apostrophe; income captions; read-only type
+  for subcategory, CategoryRepository.update enforces parent type and cascades.
+- Files: IconColorPickerScreen.kt, EditCategoriesScreen.kt, SettingsScreen.kt (wrapper only),
+  CurrencyPicker.kt, DataScreen.kt, DataWidgets.kt, CsvExporter.kt, AddTransactionScreen.kt,
+  CategoryFormSheets.kt, CategoryRepository.kt, strings (uk/en/ru), tests.
+- Verification: Gradle not run on VPS (disk). CI: `:app:testPersonalDebugUnitTest`.

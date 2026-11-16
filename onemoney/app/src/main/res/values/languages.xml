@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Мови, які пропонує налаштування «Мова». Тільки ті, для яких є переклад:
+     uk — базові values/strings.xml, решта — values-<tag>/strings.xml.
+     Додаєте values-xx — додайте тег сюди (LanguageResourcesTest звіряє список з каталогами). -->
+<resources>
+    <string-array name="app_language_tags" translatable="false">
+        <item>uk</item>
+        <item>ru</item>
+        <item>en</item>
+    </string-array>
+</resources>
