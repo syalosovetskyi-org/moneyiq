@@ -11,11 +11,12 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import org.syalosovetskyi.onemoney.data.db.AppDatabase
 import org.syalosovetskyi.onemoney.data.db.dao.AccountDao
 import org.syalosovetskyi.onemoney.data.db.dao.CategoryDao
 import org.syalosovetskyi.onemoney.data.db.dao.TransactionDao
+import org.syalosovetskyi.onemoney.data.repository.BackupStore
 import org.syalosovetskyi.onemoney.data.repository.SettingsRepository
-import org.syalosovetskyi.onemoney.util.BackupData
 import org.syalosovetskyi.onemoney.util.BackupSerializer
 import java.text.SimpleDateFormat
 import java.util.*
@@ -30,6 +31,7 @@ interface DriveBackupEntryPoint {
     fun categoryDao(): CategoryDao
     fun transactionDao(): TransactionDao
     fun settingsRepository(): SettingsRepository
+    fun database(): AppDatabase
 }
 
 // ── Worker ────────────────────────────────────────────────────────────────────
@@ -52,18 +54,11 @@ class DriveBackupWorker(
 
             val folderUri = Uri.parse(folderUriStr)
 
-            // Збираємо дані
-            val accounts     = ep.accountDao().getAllAccountsOnce()
-            val categories   = ep.categoryDao().getAllCategoriesOnce()
-            val transactions = ep.transactionDao().getAllTransactions()
-
-            val backupData = BackupData(
-                version      = BackupSerializer.BACKUP_VERSION,
-                exportDate   = System.currentTimeMillis(),
-                accounts     = accounts,
-                categories   = categories,
-                transactions = transactions
-            )
+            // Збираємо дані одним знімком у транзакції: паралельний синк між читаннями
+            // таблиць дав би операції з посиланнями поза файлом. Невідновний знімок
+            // падає тут, при створенні, а не при відновленні (serg/tasks#3045).
+            val backupData = BackupStore(ep.database()).snapshot()
+            BackupSerializer.validate(backupData)
             val json = BackupSerializer.serialize(backupData)
 
             val dateFmt = SimpleDateFormat("yyyy-MM-dd_HHmmss_SSS", Locale.ROOT)
@@ -144,6 +139,11 @@ class DriveBackupWorker(
         }
         }
 
+        /** Імена, які пише сам застосунок: `zerno_…json` (і `onemoney_…json` до перейменування). */
+        private val OWN_BACKUP_NAME = Regex("^(zerno|onemoney)_.+\\.json$")
+
+        fun isOwnBackupName(name: String): Boolean = OWN_BACKUP_NAME.matches(name)
+
         fun listBackupFiles(context: Context, treeUri: Uri): List<DriveBackupEntry> {
             val result = mutableListOf<DriveBackupEntry>()
             return try {
@@ -165,11 +165,11 @@ class DriveBackupWorker(
                     val nameIdx = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
                     val modIdx  = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
                     val sizeIdx = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_SIZE)
-                    val mimeIdx = it.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
                     while (it.moveToNext()) {
-                        val mime = it.getString(mimeIdx) ?: ""
                         val name = it.getString(nameIdx) ?: ""
-                        if (!name.endsWith(".tmp") && (mime == "application/json" || name.endsWith(".json"))) {
+                        // Лише власні бекапи: ротація видаляє все з цього списку, крім
+                        // найсвіжіших, а папка може бути спільною (serg/tasks#3045).
+                        if (isOwnBackupName(name)) {
                             result += DriveBackupEntry(
                                 documentId  = it.getString(idIdx),
                                 name        = name,

@@ -33,7 +33,15 @@ class DataViewModelTest {
     private val settingsRepo: SettingsRepository = mockk(relaxed = true)
     private val overrideRepo: TxOverrideRepository = mockk(relaxed = true)
 
-    private fun buildVm() = DataViewModel(txDao, accountDao, categoryDao, settingsRepo, overrideRepo, mockk(relaxed = true))
+    // Експорт бере знімок через BackupStore (одна транзакція); тут знімок збирається з тих самих DAO-моків.
+    private val backupStore: org.syalosovetskyi.onemoney.data.repository.BackupStore = mockk(relaxed = true) {
+        coEvery { snapshot() } coAnswers {
+            org.syalosovetskyi.onemoney.util.BackupData(BackupSerializer.BACKUP_VERSION, 0L,
+                accountDao.getAllAccountsOnce(), categoryDao.getAllCategoriesOnce(), txDao.getAllTransactions())
+        }
+    }
+
+    private fun buildVm() = DataViewModel(txDao, accountDao, categoryDao, settingsRepo, overrideRepo, backupStore)
 
     @Test
     fun `buildExportJson serializes all dao data`() = runTest {
