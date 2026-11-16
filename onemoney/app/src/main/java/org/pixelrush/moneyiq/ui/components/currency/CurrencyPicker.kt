@@ -239,60 +239,65 @@ internal fun CurrencyPageContent(
         else -> CURRENCIES_CRYPTO
     }
 
-    Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-        Row(
-            modifier          = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = Spacing.xs, vertical = Spacing.xs),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onClose) {
-                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.acc_close))
+    // Callers show this in a bare Dialog or as a page outside any Scaffold, so the
+    // Surface is what sets LocalContentColor (title and «×» were black in dark theme)
+    // and gives the list an opaque background (#3037 R7).
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+            Row(
+                modifier          = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = Spacing.xs, vertical = Spacing.xs),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onClose) {
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.acc_close))
+                }
+                Text(title ?: stringResource(R.string.settings_default_currency), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = Spacing.xs))
             }
-            Text(title ?: stringResource(R.string.settings_default_currency), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = Spacing.xs))
-        }
 
-        TabRow(selectedTabIndex = tabIndex) {
-            tabs.forEachIndexed { i, label ->
-                Tab(
-                    selected = tabIndex == i,
-                    onClick  = { tabIndex = i },
-                    text     = { Text(label, fontSize = 12.sp) }
-                )
+            TabRow(selectedTabIndex = tabIndex) {
+                tabs.forEachIndexed { i, label ->
+                    Tab(
+                        selected = tabIndex == i,
+                        onClick  = { tabIndex = i },
+                        text     = { Text(label, fontSize = 12.sp) }
+                    )
+                }
             }
-        }
 
-        LazyColumn {
-            items(currencies) { currency ->
-                val isSelected = currency.code == selected
-                ListItem(
-                    modifier        = Modifier.clickable { onSelect(currency.code) },
-                    leadingContent  = {
-                        RadioButton(selected = isSelected, onClick = { onSelect(currency.code) })
-                    },
-                    headlineContent = {
-                        Text(
-                            currencyDisplayName(currency.code),
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color      = if (isSelected) MaterialTheme.colorScheme.primary
-                                         else MaterialTheme.colorScheme.onSurface
-                        )
-                    },
-                    trailingContent = {
-                        Text(
-                            currency.symbol,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                )
-                HorizontalDivider(
-                    modifier  = Modifier.padding(start = 72.dp),
-                    thickness = 0.5.dp,
-                    color     = MaterialTheme.colorScheme.outlineVariant
-                )
+            LazyColumn {
+                items(currencies) { currency ->
+                    val isSelected = currency.code == selected
+                    ListItem(
+                        modifier        = Modifier.clickable { onSelect(currency.code) },
+                        leadingContent  = {
+                            RadioButton(selected = isSelected, onClick = { onSelect(currency.code) })
+                        },
+                        headlineContent = {
+                            Text(
+                                currencyDisplayName(currency.code),
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color      = if (isSelected) MaterialTheme.colorScheme.primary
+                                             else MaterialTheme.colorScheme.onSurface
+                            )
+                        },
+                        trailingContent = {
+                            Text(
+                                currency.symbol,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    )
+                    HorizontalDivider(
+                        modifier  = Modifier.padding(start = 72.dp),
+                        thickness = 0.5.dp,
+                        color     = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
             }
         }
     }

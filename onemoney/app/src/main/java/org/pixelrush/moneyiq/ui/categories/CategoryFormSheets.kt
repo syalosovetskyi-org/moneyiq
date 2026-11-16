@@ -92,6 +92,7 @@ fun CategoryFormSheet(
     var period        by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.budgetPeriod ?: "MONTHLY") }
     var archived      by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.archived ?: false) }
     var currencyCode  by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(existing?.currencyCode ?: "UAH") }
+    val isSubcategory = forParentId != null || existing?.parentId != null
 
     var showIconPicker     by remember { mutableStateOf(false) }
     var showDeleteConfirm  by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
@@ -210,16 +211,30 @@ fun CategoryFormSheet(
                                 modifier = Modifier.size(22.dp))
                         },
                         headlineContent = { Text(stringResource(R.string.acc_field_type)) },
-                        trailingContent = {
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                listOf(TransactionType.EXPENSE to stringResource(R.string.common_expenses), TransactionType.INCOME to stringResource(R.string.common_incomes))
-                                    .forEach { (t, label) ->
-                                        FilterChip(
-                                            selected = type == t,
-                                            onClick  = { type = t },
-                                            label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
-                                        )
-                                    }
+                        // A subcategory inherits the parent's type (#3037 R17): show it read-only.
+                        supportingContent = if (isSubcategory) {
+                            { Text(stringResource(R.string.cat_type_inherited)) }
+                        } else null,
+                        trailingContent = if (isSubcategory) {
+                            {
+                                Text(
+                                    stringResource(if (type == TransactionType.INCOME) R.string.common_incomes else R.string.common_expenses),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        } else {
+                            {
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    listOf(TransactionType.EXPENSE to stringResource(R.string.common_expenses), TransactionType.INCOME to stringResource(R.string.common_incomes))
+                                        .forEach { (t, label) ->
+                                            FilterChip(
+                                                selected = type == t,
+                                                onClick  = { type = t },
+                                                label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                                            )
+                                        }
+                                }
                             }
                         }
                     )

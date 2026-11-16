@@ -56,27 +56,31 @@ fun SettingsScreen(
 
     BackHandler(onBack = onBack)
 
-    when (page) {
-        SettingsPage.MAIN     -> MainSettingsContent(
-            settings   = settings,
-            vm         = viewModel,
-            onTheme    = { page = SettingsPage.THEME },
-            onCurrency = { page = SettingsPage.CURRENCY },
-            onData     = onData,
-            onAbout    = { page = SettingsPage.ABOUT },
-            onBack     = onBack
-        )
-        SettingsPage.THEME    -> ThemePageContent(
-            settings = settings,
-            vm       = viewModel,
-            onBack   = onBack
-        )
-        SettingsPage.CURRENCY -> CurrencyPageContent(
-            selected = settings.defaultCurrency,
-            onSelect = { code -> viewModel.setDefaultCurrency(code); page = SettingsPage.MAIN },
-            onClose  = { page = SettingsPage.MAIN }
-        )
-        SettingsPage.ABOUT    -> AboutPageContent(onBack = onBack)
+    // Settings is drawn outside any Scaffold: the Surface provides LocalContentColor,
+    // otherwise untinted Text/Icon stay Color.Black in dark theme (#3037 R7).
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+        when (page) {
+            SettingsPage.MAIN     -> MainSettingsContent(
+                settings   = settings,
+                vm         = viewModel,
+                onTheme    = { page = SettingsPage.THEME },
+                onCurrency = { page = SettingsPage.CURRENCY },
+                onData     = onData,
+                onAbout    = { page = SettingsPage.ABOUT },
+                onBack     = onBack
+            )
+            SettingsPage.THEME    -> ThemePageContent(
+                settings = settings,
+                vm       = viewModel,
+                onBack   = onBack
+            )
+            SettingsPage.CURRENCY -> CurrencyPageContent(
+                selected = settings.defaultCurrency,
+                onSelect = { code -> viewModel.setDefaultCurrency(code); page = SettingsPage.MAIN },
+                onClose  = { page = SettingsPage.MAIN }
+            )
+            SettingsPage.ABOUT    -> AboutPageContent(onBack = onBack)
+        }
     }
 }
 

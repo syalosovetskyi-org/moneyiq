@@ -37,7 +37,12 @@ import org.syalosovetskyi.onemoney.R
 
 data class AccountIconInfo(val key: String, val icon: ImageVector)
 
-val ACCOUNT_ICONS: List<AccountIconInfo> = listOf(
+// Keys must be unique: the picker grid uses them as LazyGrid keys (a duplicate
+// "sports" crashed it, #3037) and accountIconFromKey resolves by key. The
+// uniqueness of the raw list is pinned by AccountIconCatalogueTest; distinctBy in
+// ACCOUNT_ICONS keeps a release build from crashing if a duplicate slips in anyway
+// (first entry wins, which is also what accountIconFromKey would return).
+internal val ACCOUNT_ICON_ENTRIES: List<AccountIconInfo> = listOf(
     // Category aliases — kept so saved category keys still resolve
     AccountIconInfo("category",     Icons.Outlined.Category),
     AccountIconInfo("shopping",     Icons.Outlined.ShoppingCart),
@@ -131,7 +136,6 @@ val ACCOUNT_ICONS: List<AccountIconInfo> = listOf(
     AccountIconInfo("local_pharmacy",         Icons.Outlined.LocalPharmacy),
     AccountIconInfo("psychology",             Icons.Outlined.Psychology),
     AccountIconInfo("self_improvement",       Icons.Outlined.SelfImprovement),
-    AccountIconInfo("sports",                 Icons.Outlined.Sports),
     // Entertainment
     AccountIconInfo("sports_esports",         Icons.Outlined.SportsEsports),
     AccountIconInfo("movie",                  Icons.Outlined.Movie),
@@ -193,6 +197,8 @@ val ACCOUNT_ICONS: List<AccountIconInfo> = listOf(
     AccountIconInfo("bookmark_border",        Icons.Outlined.BookmarkBorder),
     AccountIconInfo("info",                   Icons.Outlined.Info),
 )
+
+val ACCOUNT_ICONS: List<AccountIconInfo> = ACCOUNT_ICON_ENTRIES.distinctBy { it.key }
 
 fun accountIconFromKey(key: String): ImageVector =
     ACCOUNT_ICONS.find { it.key == key }?.icon ?: Icons.Outlined.AccountBalanceWallet

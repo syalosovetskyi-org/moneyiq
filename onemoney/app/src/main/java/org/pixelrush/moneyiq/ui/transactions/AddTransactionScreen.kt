@@ -86,6 +86,9 @@ fun AddTransactionScreen(
     }
 
     val isTransfer = state.type == TransactionType.TRANSFER
+    // Income flows category → account, so the panel captions flip (#3037 R16);
+    // same wording as the quick-expense sheet (CategorySheets).
+    val isIncome   = state.type == TransactionType.INCOME
 
     val fromAccount  = state.accounts.firstOrNull { it.id == state.selectedAccountId }
     val toAccount    = state.accounts.firstOrNull { it.id == state.selectedToAccountId }
@@ -186,7 +189,10 @@ fun AddTransactionScreen(
                         Icon(Icons.Outlined.AccountBalanceWallet, null, tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                     Column(modifier = Modifier.align(Alignment.BottomStart).padding(start = 12.dp, bottom = 8.dp)) {
-                        Text(stringResource(R.string.tx_from_account), style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f))
+                        Text(
+                            if (isIncome) stringResource(R.string.tx_to_account) else stringResource(R.string.tx_from_account),
+                            style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f)
+                        )
                         Text(
                             fromAccount?.name ?: "—",
                             style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
@@ -231,7 +237,11 @@ fun AddTransactionScreen(
                         horizontalAlignment = Alignment.End
                     ) {
                         Text(
-                            if (isTransfer) stringResource(R.string.tx_to_account) else stringResource(R.string.tx_to_category),
+                            when {
+                                isTransfer -> stringResource(R.string.tx_to_account)
+                                isIncome   -> stringResource(R.string.cat_from_category)
+                                else       -> stringResource(R.string.tx_to_category)
+                            },
                             style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f)
                         )
                         Text(

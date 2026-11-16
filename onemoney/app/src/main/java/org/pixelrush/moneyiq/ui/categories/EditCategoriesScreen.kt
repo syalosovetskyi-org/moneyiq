@@ -1,6 +1,5 @@
 ﻿package org.syalosovetskyi.onemoney.ui.categories
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -65,10 +64,12 @@ fun EditCategoriesScreen(
     else
         localCats.filter { it.parentId != null }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+    // Surface, not Box+background: the screen is drawn outside any Scaffold, so
+    // without it LocalContentColor stays Color.Black and the title/back arrow are
+    // invisible in dark theme (#3037 R7).
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color    = MaterialTheme.colorScheme.background,
     ) {
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             // ── Top bar ───────────────────────────────────────────────────────

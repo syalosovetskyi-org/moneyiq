@@ -19,7 +19,22 @@ class CategoryRepository @Inject constructor(private val dao: CategoryDao) {
 
     suspend fun save(category: CategoryEntity): Long = dao.insertCategory(category)
 
-    suspend fun update(category: CategoryEntity) = dao.updateCategory(category)
+    /**
+     * A subcategory always has its parent's type (#3037 R17): a subcategory is saved
+     * with the parent's type whatever the caller passed, and changing a root
+     * category's type carries its subcategories along.
+     */
+    suspend fun update(category: CategoryEntity) {
+        val parentType = category.parentId?.let { dao.getCategoryById(it)?.type }
+        val toSave = if (parentType != null && parentType != category.type)
+            category.copy(type = parentType) else category
+        dao.updateCategory(toSave)
+        if (toSave.parentId == null) {
+            val stale = dao.getAllCategoriesOnce()
+                .filter { it.parentId == toSave.id && it.type != toSave.type }
+            if (stale.isNotEmpty()) dao.updateCategories(stale.map { it.copy(type = toSave.type) })
+        }
+    }
 
     suspend fun updateAll(categories: List<CategoryEntity>) = dao.updateCategories(categories)
 

@@ -117,9 +117,29 @@ class ComponentInteractionTest {
         var all = 0; var transactions = 0
         render { ResetDataDialog({ all++ }, { transactions++ }, {}) }
         compose.onNodeWithText(label(R.string.data_delete_all_tx)).performClick()
+        compose.onNodeWithText(label(R.string.data_reset_confirm)).performClick()
         compose.runOnIdle { assertEquals(0, all); assertEquals(1, transactions) }
+    }
+
+    @Test fun reset_dialog_delete_all_needs_second_confirmation() {
+        var all = 0; var transactions = 0
+        render { ResetDataDialog({ all++ }, { transactions++ }, {}) }
         compose.onNodeWithText(label(R.string.data_delete_all)).performClick()
-        compose.runOnIdle { assertEquals(1, all); assertEquals(1, transactions) }
+        // First tap only opens the consequences dialog — nothing is deleted yet (#3037 R13).
+        compose.runOnIdle { assertEquals(0, all); assertEquals(0, transactions) }
+        compose.onNodeWithText(label(R.string.data_reset_all_title)).assertExists()
+        compose.onNodeWithText(label(R.string.data_reset_confirm)).performClick()
+        compose.runOnIdle { assertEquals(1, all); assertEquals(0, transactions) }
+    }
+
+    @Test fun reset_dialog_cancel_on_second_step_deletes_nothing() {
+        var all = 0; var transactions = 0; var dismissed = false
+        render { ResetDataDialog({ all++ }, { transactions++ }, { dismissed = true }) }
+        compose.onNodeWithText(label(R.string.data_delete_all)).performClick()
+        compose.onNodeWithText(label(R.string.common_cancel)).performClick()
+        // Back to the choice step, still nothing deleted and the dialog is not closed.
+        compose.onNodeWithText(label(R.string.data_delete_all_tx)).assertExists()
+        compose.runOnIdle { assertEquals(0, all); assertEquals(0, transactions); assertFalse(dismissed) }
     }
 
     @Test fun repeat_dialog_does_not_submit_until_confirmation() {
